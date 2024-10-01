@@ -1,0 +1,39 @@
+# 하이퍼 파라미터 항목
+hyperparameter_optimization:
+  n_trials: 30
+  parameters:
+    learning_rate:
+      min: 1e-5
+      max: 1e-1
+      type: "log_uniform"
+    batch_size:
+      values: [16, 32, 64]
+      type: "categorical"
+    optimizer:
+      values: ["Adam"]
+      type: "categorical"
+    weight_decay:
+      min: 1e-4
+      max: 1e-4
+      type: "log_uniform"
+    num_epochs: 
+      min: 5
+      max: 20
+      type: "int"
+augmentation:
+  noise: 0.0
+  blur: 0.0
+
+offline_augmentation:
+  augmentation:
+    flip: 1
+    mask: 1
+  ratio: 2
+
+randaugment:
+  num_ops: 3
+  magnitude: 4
+
+ensemble:
+  type: "hard"
+  # soft / hard
