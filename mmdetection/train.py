@@ -50,4 +50,4 @@ model = build_detector(cfg.model)
 model.init_weights()
 
 # 모델 학습
-train_detector(model, datasets[0], cfg, distributed=False, validate=True)
+train_detector(model, datasets[0], cfg, distributed=False, validate=False)
