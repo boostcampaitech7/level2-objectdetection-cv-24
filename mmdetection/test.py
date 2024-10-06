@@ -16,9 +16,9 @@ classes = ("General trash", "Paper", "Paper pack", "Metal", "Glass",
            "Plastic", "Styrofoam", "Plastic bag", "Battery", "Clothing")
 
 # config file 들고오기
-cfg = Config.fromfile('./mmdetection/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py')
+cfg = Config.fromfile('./mmdetection/configs/retinanet/retinanet_r50_fpn_1x_coco.py')
 
-root='../dataset/'
+root='./dataset/'
 
 epoch = 'latest'
 
@@ -33,9 +33,10 @@ cfg.data.samples_per_gpu = 4
 
 cfg.seed=2021
 cfg.gpu_ids = [1]
-cfg.work_dir = './mmdetection/work_dirs/faster_rcnn_r50_fpn_1x_trash'
+cfg.work_dir = './mmdetection/work_dirs/retinanet_r50_fpn_1x_coco_trash'
 
-cfg.model.roi_head.bbox_head.num_classes = 10
+# cfg.model.roi_head.bbox_head.num_classes = 10 # Faster_rcnn
+cfg.model.bbox_head.num_classes = 10 # Retinanet
 
 cfg.optimizer_config.grad_clip = dict(max_norm=35, norm_type=2)
 cfg.model.train_cfg = None

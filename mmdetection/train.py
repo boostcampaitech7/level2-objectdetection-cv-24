@@ -1,5 +1,5 @@
 # 모듈 import
-
+import wandb
 from mmcv import Config
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
@@ -12,9 +12,9 @@ classes = ("General trash", "Paper", "Paper pack", "Metal", "Glass",
            "Plastic", "Styrofoam", "Plastic bag", "Battery", "Clothing")
 
 # config file 들고오기
-cfg = Config.fromfile('./mmdetection/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py')
+cfg = Config.fromfile('./mmdetection/configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py')
 
-root='../dataset/'
+root='./dataset/'
 
 # dataset config 수정
 cfg.data.train.classes = classes
@@ -31,13 +31,39 @@ cfg.data.samples_per_gpu = 4
 
 cfg.seed = 2022
 cfg.gpu_ids = [0]
-cfg.work_dir = './mmdetection/work_dirs/faster_rcnn_r50_fpn_1x_trash'
+cfg.work_dir = './mmdetection/work_dirs/cascade_rcnn_r50_fpn_1x_coco_trash'
 
-cfg.model.roi_head.bbox_head.num_classes = 10
+if isinstance(cfg.model.roi_head.bbox_head, list):
+    for head in cfg.model.roi_head.bbox_head:
+        head.num_classes = 10
+else:
+    cfg.model.roi_head.bbox_head.num_classes = 10
+
+# cfg.model.roi_head.bbox_head.num_classes = 10
+# cfg.model.bbox_head.num_classes = 10 # Retinanet
 
 cfg.optimizer_config.grad_clip = dict(max_norm=35, norm_type=2)
 cfg.checkpoint_config = dict(max_keep_ckpts=3, interval=1)
 cfg.device = get_device()
+
+wandb.init(project='mmdetection-trash-detection', entity='gaemanssi2-naver-ai-boostcamp', name=cfg.model.type)
+
+wandb.config.update({
+    "model": cfg.model.type,
+    "backbone": cfg.model.backbone.type,
+    "learning_rate": cfg.optimizer.lr,
+    "batch_size": cfg.data.samples_per_gpu,
+    "num_epochs": cfg.runner.max_epochs,
+    "img_scale": cfg.data.train.pipeline[2]['img_scale'],
+    "classes": classes
+})
+
+if 'log_config' not in cfg:
+    cfg.log_config = dict(interval=50)
+if 'hooks' not in cfg.log_config:
+    cfg.log_config.hooks = []
+
+cfg.evaluation = dict(interval=1, metric='bbox')
 
 # build_dataset
 datasets = [build_dataset(cfg.data.train)]
@@ -49,5 +75,16 @@ datasets[0]
 model = build_detector(cfg.model)
 model.init_weights()
 
+cfg.log_config.hooks.append(
+    dict(type='MMDetWandbHook',
+         init_kwargs={'project': 'mmdetection-trash-detection'},
+         interval=len(datasets[0]),
+         log_checkpoint=True,
+         log_checkpoint_metadata=True,
+         num_eval_images=0) # val dataset을 안쓰는 경우 0, 사용 시 100 정도로 숫자 조정
+)
+
 # 모델 학습
 train_detector(model, datasets[0], cfg, distributed=False, validate=False)
+
+wandb.finish()
