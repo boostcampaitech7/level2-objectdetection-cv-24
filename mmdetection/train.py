@@ -79,8 +79,8 @@ cfg.log_config.hooks.append(
     dict(type='MMDetWandbHook',
          init_kwargs={'project': 'mmdetection-trash-detection'},
          interval=len(datasets[0]),
-         log_checkpoint=True,
-         log_checkpoint_metadata=True,
+         log_checkpoint=False,
+         log_checkpoint_metadata=False,
          num_eval_images=0) # val dataset을 안쓰는 경우 0, 사용 시 100 정도로 숫자 조정
 )
 
