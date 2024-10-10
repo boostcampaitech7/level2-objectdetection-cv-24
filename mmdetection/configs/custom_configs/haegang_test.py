@@ -17,18 +17,6 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 
-val_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='PackDetInputs')
-]
-
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
-    dict(type='PackDetInputs')
-]
 
 # 데이터 로더 설정
 train_dataloader = dict(
@@ -47,37 +35,6 @@ train_dataloader = dict(
     )
 )
 
-val_dataloader = dict(
-    batch_size=4,
-    num_workers=2,
-    persistent_workers=True,
-    sampler=dict(type='DefaultSampler', shuffle=False),
-    dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='test.json',
-        data_prefix=dict(img=''),
-        test_mode=True,
-        pipeline=val_pipeline,
-        metainfo=dict(classes=classes)
-    )
-)
-
-test_dataloader = dict(
-    batch_size=2,
-    num_workers=2,
-    persistent_workers=True,
-    sampler=dict(type='DefaultSampler', shuffle=False),
-    dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='test.json',
-        data_prefix=dict(img=''),
-        test_mode=True,
-        pipeline=test_pipeline,
-        metainfo=dict(classes=classes)
-    )
-)
 
 optim_wrapper = dict(
     _delete_=True,
@@ -87,31 +44,12 @@ optim_wrapper = dict(
     paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)})
 )
 
-val_evaluator = dict(
-    type='CocoMetric',
-    ann_file=data_root + 'test.json',
-    metric='bbox',
-    format_only=False,
-    classwise=True
-)
-
-test_evaluator = dict(
-    type='CocoMetric',
-    ann_file=data_root + 'test.json',
-    metric='bbox',
-    format_only=False,
-    classwise=True
-)
-
 train_cfg = dict(
     _delete_=True,
     type='EpochBasedTrainLoop',
     max_epochs=40,
     val_interval=1
 )
-
-val_cfg = dict(type='ValLoop')
-test_cfg = dict(type='TestLoop')
 
 param_scheduler = [
     dict(

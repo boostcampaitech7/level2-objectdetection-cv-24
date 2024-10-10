@@ -3,6 +3,7 @@ import torch
 from mmengine.config import Config
 from mmengine.runner import Runner
 from mmdet.utils import register_all_modules 
+from mmdet.registry import MODELS
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detection model')
@@ -16,12 +17,16 @@ def parse_args():
 
 def main():
     args = parse_args()
+
     
     # 모든 mmdetection 모듈을 등록
     register_all_modules()
 
+
     # config 파일 로드
     cfg = Config.fromfile(args.config)
+
+    
 
     # 작업 디렉토리 설정
     if args.work_dir is not None:
@@ -42,8 +47,14 @@ def main():
     cfg.seed = args.seed
 
     # 설정 출력 (디버깅용)
-    print(cfg.pretty_text)
+    #print(cfg.pretty_text)
 
+    print('Available models:', MODELS.module_dict.keys())
+    if 'CoDETR' in MODELS.module_dict:
+        print("CoDETR is correctly registered.")
+    else:
+        print("CoDETR is NOT registered.")
+        
     # Runner 생성 및 학습 시작
     runner = Runner.from_cfg(cfg)
     runner.train()
