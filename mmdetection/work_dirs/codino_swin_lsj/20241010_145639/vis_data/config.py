@@ -152,32 +152,28 @@ resume = False
 seed = 42
 test_cfg = dict(type='TestLoop')
 test_dataloader = dict(
-    batch_size=2,
+    batch_size=1,
     dataset=dict(
-        ann_file='test.json',
+        ann_file='annotations/instances_val2017.json',
         backend_args=None,
-        data_prefix=dict(img=''),
-        data_root='../dataset/',
-        metainfo=dict(
-            classes=(
-                'General trash',
-                'Paper',
-                'Paper pack',
-                'Metal',
-                'Glass',
-                'Plastic',
-                'Styrofoam',
-                'Plastic bag',
-                'Battery',
-                'Clothing',
-            )),
+        data_prefix=dict(img='val2017/'),
+        data_root='data/coco/',
         pipeline=[
-            dict(type='LoadImageFromFile'),
+            dict(backend_args=None, type='LoadImageFromFile'),
             dict(keep_ratio=True, scale=(
-                1024,
-                1024,
+                1333,
+                800,
             ), type='Resize'),
-            dict(type='PackDetInputs'),
+            dict(type='LoadAnnotations', with_bbox=True),
+            dict(
+                meta_keys=(
+                    'img_id',
+                    'img_path',
+                    'ori_shape',
+                    'img_shape',
+                    'scale_factor',
+                ),
+                type='PackDetInputs'),
         ],
         test_mode=True,
         type='CocoDataset'),
@@ -186,19 +182,27 @@ test_dataloader = dict(
     persistent_workers=True,
     sampler=dict(shuffle=False, type='DefaultSampler'))
 test_evaluator = dict(
-    ann_file='../dataset/test.json',
+    ann_file='data/coco/annotations/instances_val2017.json',
     backend_args=None,
-    classwise=True,
     format_only=False,
     metric='bbox',
     type='CocoMetric')
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(backend_args=None, type='LoadImageFromFile'),
     dict(keep_ratio=True, scale=(
-        1024,
-        1024,
+        1333,
+        800,
     ), type='Resize'),
-    dict(type='PackDetInputs'),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(
+        meta_keys=(
+            'img_id',
+            'img_path',
+            'ori_shape',
+            'img_shape',
+            'scale_factor',
+        ),
+        type='PackDetInputs'),
 ]
 train_cfg = dict(max_epochs=40, type='EpochBasedTrainLoop', val_interval=1)
 train_dataloader = dict(
@@ -251,33 +255,28 @@ train_pipeline = [
 ]
 val_cfg = dict(type='ValLoop')
 val_dataloader = dict(
-    batch_size=4,
+    batch_size=1,
     dataset=dict(
-        ann_file='test.json',
+        ann_file='annotations/instances_val2017.json',
         backend_args=None,
-        data_prefix=dict(img=''),
-        data_root='../dataset/',
-        metainfo=dict(
-            classes=(
-                'General trash',
-                'Paper',
-                'Paper pack',
-                'Metal',
-                'Glass',
-                'Plastic',
-                'Styrofoam',
-                'Plastic bag',
-                'Battery',
-                'Clothing',
-            )),
+        data_prefix=dict(img='val2017/'),
+        data_root='data/coco/',
         pipeline=[
-            dict(type='LoadImageFromFile'),
+            dict(backend_args=None, type='LoadImageFromFile'),
             dict(keep_ratio=True, scale=(
-                1024,
-                1024,
+                1333,
+                800,
             ), type='Resize'),
             dict(type='LoadAnnotations', with_bbox=True),
-            dict(type='PackDetInputs'),
+            dict(
+                meta_keys=(
+                    'img_id',
+                    'img_path',
+                    'ori_shape',
+                    'img_shape',
+                    'scale_factor',
+                ),
+                type='PackDetInputs'),
         ],
         test_mode=True,
         type='CocoDataset'),
@@ -286,21 +285,11 @@ val_dataloader = dict(
     persistent_workers=True,
     sampler=dict(shuffle=False, type='DefaultSampler'))
 val_evaluator = dict(
-    ann_file='../dataset/test.json',
+    ann_file='data/coco/annotations/instances_val2017.json',
     backend_args=None,
-    classwise=True,
     format_only=False,
     metric='bbox',
     type='CocoMetric')
-val_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(keep_ratio=True, scale=(
-        1024,
-        1024,
-    ), type='Resize'),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='PackDetInputs'),
-]
 vis_backends = [
     dict(type='LocalVisBackend'),
 ]
