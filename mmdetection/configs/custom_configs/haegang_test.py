@@ -7,11 +7,6 @@ data_root = '../dataset/'
 classes = ('General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
            'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing')
 
-dataset_type = 'CocoDataset'
-data_root = '../dataset/'
-classes = ('General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
-           'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing')
-
 # 데이터 파이프라인 설정
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -44,7 +39,7 @@ train_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='train.json',
+        ann_file='temp_train.json',
         data_prefix=dict(img=''),
         filter_cfg=dict(filter_empty_gt=True, min_size=32),
         pipeline=train_pipeline,
@@ -60,7 +55,7 @@ val_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='test.json',
+        ann_file='temp_val.json',
         data_prefix=dict(img=''),
         test_mode=True,
         pipeline=val_pipeline,
@@ -94,7 +89,7 @@ optim_wrapper = dict(
 
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=data_root + 'test.json',
+    ann_file=data_root + 'temp_val.json',
     metric='bbox',
     format_only=False,
     classwise=True

@@ -73,7 +73,7 @@ model = dict(
         alpha=0.25,
         gamma=2.0,
         tau=1.5,
-        num_classes=80,
+        num_classes=10,
         sync_cls_avg_factor=True,
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True,
