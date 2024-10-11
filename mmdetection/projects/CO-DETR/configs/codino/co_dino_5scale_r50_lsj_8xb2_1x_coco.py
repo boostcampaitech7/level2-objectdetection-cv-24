@@ -1,4 +1,8 @@
 #_base_ = 'mmdet::common/ssj_scp_270k_coco-instance.py'
+_base_ = [
+    '../../../../configs/_base_/datasets/coco_detection.py',
+    '../../../../configs/_base_/default_runtime.py'
+]
 
 custom_imports = dict(
     imports=['projects.CO-DETR.codetr'], allow_failed_imports=True)
