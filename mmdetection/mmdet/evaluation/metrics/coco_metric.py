@@ -371,8 +371,13 @@ class CocoMetric(BaseMetric):
 
             # parse gt
             gt = dict()
-            gt['width'] = data_sample['ori_shape'][1]
-            gt['height'] = data_sample['ori_shape'][0]
+            if 'ori_shape' in data_sample:
+                gt['width'] = data_sample['ori_shape'][1]
+                gt['height'] = data_sample['ori_shape'][0]
+            else:
+                gt['width'] = 1024  # 기본값 설정
+                gt['height'] = 1024  # 기본값 설정
+            
             gt['img_id'] = data_sample['img_id']
             if self._coco_api is None:
                 # TODO: Need to refactor to support LoadAnnotations
