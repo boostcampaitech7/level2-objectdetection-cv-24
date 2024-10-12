@@ -32,7 +32,7 @@ test_pipeline = [
 
 # 데이터 로더 설정
 train_dataloader = dict(
-    batch_size=2,
+    batch_size=1,
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
@@ -119,7 +119,7 @@ param_scheduler = [
         begin=0,
         end=40,
         by_epoch=True,
-        milestones=[11, 30],
+        milestones=[],
         gamma=0.1
     )
 ]

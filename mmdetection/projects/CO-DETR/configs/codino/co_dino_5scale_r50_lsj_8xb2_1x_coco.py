@@ -1,4 +1,8 @@
 #_base_ = 'mmdet::common/ssj_scp_270k_coco-instance.py'
+_base_ = [
+    '../../../../configs/_base_/datasets/coco_detection.py',
+    '../../../../configs/_base_/default_runtime.py'
+]
 
 custom_imports = dict(
     imports=['projects.CO-DETR.codetr'], allow_failed_imports=True)
@@ -32,7 +36,7 @@ model = dict(
         type='ResNet',
         depth=50,
         num_stages=4,
-        out_indices=(0, 1, 2, 3),
+        out_indices=(0, 1, 2, 3),   
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
@@ -414,4 +418,4 @@ log_processor = dict(by_epoch=True)
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (2 samples per GPU)
-auto_scale_lr = dict(base_batch_size=16)
+# auto_scale_lr = dict(base_batch_size=16)

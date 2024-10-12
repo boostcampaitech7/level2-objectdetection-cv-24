@@ -4,6 +4,8 @@ from mmengine.config import Config
 from mmengine.runner import Runner
 from mmdet.utils import register_all_modules 
 from mmdet.registry import MODELS
+from mmengine.registry import MODELS as ENGINE_MODELS
+from mmdet.models import DetDataPreprocessor
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detection model')
@@ -49,12 +51,6 @@ def main():
     # 설정 출력 (디버깅용)
     #print(cfg.pretty_text)
 
-    print('Available models:', MODELS.module_dict.keys())
-    if 'CoDETR' in MODELS.module_dict:
-        print("CoDETR is correctly registered.")
-    else:
-        print("CoDETR is NOT registered.")
-        
     # Runner 생성 및 학습 시작
     runner = Runner.from_cfg(cfg)
     runner.train()
