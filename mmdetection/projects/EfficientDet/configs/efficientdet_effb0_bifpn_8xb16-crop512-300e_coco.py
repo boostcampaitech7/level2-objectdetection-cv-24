@@ -1,8 +1,5 @@
-_base_ = [
-    'mmdet::_base_/datasets/coco_detection.py',
-    'mmdet::_base_/schedules/schedule_1x.py',
-    'mmdet::_base_/default_runtime.py'
-]
+_base_ = 'mmdet::_base_/default_runtime.py'
+
 custom_imports = dict(
     imports=['projects.EfficientDet.efficientdet'], allow_failed_imports=False)
 
@@ -10,7 +7,12 @@ image_size = 512
 batch_augments = [
     dict(type='BatchFixedSizePad', size=(image_size, image_size))
 ]
+# dataset settings
 dataset_type = 'CocoDataset'
+data_root = '../dataset/'
+classes = ('General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
+           'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing')
+
 evalute_type = 'CocoMetric'
 norm_cfg = dict(type='SyncBN', requires_grad=True, eps=1e-3, momentum=0.01)
 checkpoint = 'https://download.openmmlab.com/mmclassification/v0/efficientnet/efficientnet-b0_3rdparty_8xb32-aa-advprop_in1k_20220119-26434485.pth'  # noqa
@@ -43,7 +45,7 @@ model = dict(
         norm_cfg=norm_cfg),
     bbox_head=dict(
         type='EfficientDetSepBNHead',
-        num_classes=80,
+        num_classes=10, # 클래스 개수 수정
         num_ins=5,
         in_channels=64,
         feat_channels=64,
@@ -94,8 +96,12 @@ model = dict(
 
 # dataset settings
 train_pipeline = [
-    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
+    dict(type='LoadImageFromFile', backend_args=None),
     dict(type='LoadAnnotations', with_bbox=True),
+    dict(
+        type='Mosaic',
+        img_scale=(1024, 1024),
+        pad_val=114.0),
     dict(
         type='RandomResize',
         scale=(image_size, image_size),
@@ -103,10 +109,20 @@ train_pipeline = [
         keep_ratio=True),
     dict(type='RandomCrop', crop_size=(image_size, image_size)),
     dict(type='RandomFlip', prob=0.5),
+    dict(type='PhotoMetricDistortion'),
     dict(type='PackDetInputs')
 ]
+val_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type='PackDetInputs',
+         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
+]
+
 test_pipeline = [
-    dict(type='LoadImageFromFile', backend_args={{_base_.backend_args}}),
+    dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(image_size, image_size), keep_ratio=True),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
@@ -118,34 +134,102 @@ test_pipeline = [
 train_dataloader = dict(
     batch_size=16,
     num_workers=8,
-    dataset=dict(type=dataset_type, pipeline=train_pipeline))
-val_dataloader = dict(dataset=dict(type=dataset_type, pipeline=test_pipeline))
-test_dataloader = val_dataloader
+    persistent_workers=True,
+    pin_memory=True,
+    sampler=dict(type='DefaultSampler', shuffle=True),
+    batch_sampler=dict(type='AspectRatioBatchSampler'),
+    dataset=dict(
+        type='MultiImageMixDataset',
+        dataset=dict(
+            type=dataset_type,
+            data_root=data_root,
+            ann_file='temp_train.json',
+            data_prefix=dict(img=''),
+            filter_cfg=dict(filter_empty_gt=False, min_size=32),
+            pipeline=[
+                dict(type='LoadImageFromFile', backend_args=None),
+                dict(type='LoadAnnotations', with_bbox=True)
+            ],
+            metainfo=dict(classes=classes)),
+        pipeline=train_pipeline
+    ))
 
-val_evaluator = dict(type=evalute_type)
-test_evaluator = val_evaluator
+# validation dataloader
+val_dataloader = dict(
+    batch_size=2,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        ann_file='temp_val.json',
+        data_prefix=dict(img=''),
+        test_mode=True,
+        pipeline=val_pipeline,
+        metainfo=dict(classes=classes)))
 
+test_dataloader = dict(
+    batch_size=2,
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        ann_file='test.json',
+        data_prefix=dict(img=''),
+        test_mode=True,
+        pipeline=test_pipeline,
+        metainfo=dict(classes=classes)
+    )
+)
+
+val_evaluator = dict(
+    type='CocoMetric',
+    ann_file=data_root + 'temp_val.json',
+    metric='bbox',
+    format_only=False,
+    classwise=True
+)
+
+test_evaluator = dict(
+    type='CocoMetric',
+    ann_file=data_root + 'test.json',
+    metric='bbox',
+    format_only=False,
+    classwise=True
+)
+
+# optimizer
 optim_wrapper = dict(
-    optimizer=dict(lr=0.16, weight_decay=4e-5),
-    paramwise_cfg=dict(
-        norm_decay_mult=0, bias_decay_mult=0, bypass_duplicate=True),
-    clip_grad=dict(max_norm=10, norm_type=2))
+    type='OptimWrapper',
+    optimizer=dict(type='AdamW', lr=2e-5, weight_decay=0.0001),
+    clip_grad=dict(max_norm=0.1, norm_type=2),
+    paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)})
+)
 
 # learning policy
 max_epochs = 300
 param_scheduler = [
-    dict(type='LinearLR', start_factor=0.1, by_epoch=False, begin=0, end=917),
+    dict(type='LinearLR', start_factor=0.1, by_epoch=False, begin=0, end=3),
     dict(
         type='CosineAnnealingLR',
-        eta_min=0.0,
-        begin=1,
-        T_max=299,
+        eta_min=1e-6,
+        begin=3,
+        T_max=297,
         end=300,
         by_epoch=True,
         convert_to_iter_based=True)
 ]
-train_cfg = dict(max_epochs=max_epochs, val_interval=1)
-
+train_cfg = dict(
+    type='EpochBasedTrainLoop',
+    max_epochs=300,
+    val_interval=5
+)
+val_cfg = dict(type='ValLoop')
+test_cfg = dict(type='TestLoop')
 vis_backends = [
     dict(type='LocalVisBackend'),
     dict(type='TensorboardVisBackend')
@@ -153,7 +237,7 @@ vis_backends = [
 visualizer = dict(
     type='DetLocalVisualizer', vis_backends=vis_backends, name='visualizer')
 
-default_hooks = dict(checkpoint=dict(type='CheckpointHook', interval=15))
+default_hooks = dict(checkpoint=dict(type='CheckpointHook', interval=10))
 custom_hooks = [
     dict(
         type='EMAHook',
