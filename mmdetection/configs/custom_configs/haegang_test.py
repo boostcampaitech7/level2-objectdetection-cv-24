@@ -1,5 +1,5 @@
 _base_ = [
-    '../../projects/CO-DETR/configs/codino/co_dino_5scale_r50_lsj_8xb2_1x_coco.py'
+    '../../configs/cascade_rcnn/cascade-rcnn_x101_64x4d_fpn_20e_coco.py'
 ]
 
 dataset_type = 'CocoDataset'
@@ -32,7 +32,7 @@ test_pipeline = [
 
 # 데이터 로더 설정
 train_dataloader = dict(
-    batch_size=1,
+    batch_size=4,
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
@@ -64,7 +64,7 @@ val_dataloader = dict(
 )
 
 test_dataloader = dict(
-    batch_size=2,
+    batch_size=4,
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=False),
@@ -82,7 +82,7 @@ test_dataloader = dict(
 optim_wrapper = dict(
     _delete_=True,
     type='OptimWrapper',
-    optimizer=dict(type='AdamW', lr=2e-5, weight_decay=0.0001),
+    optimizer=dict(type='AdamW', lr=2e-4, weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
     paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)})
 )
@@ -115,12 +115,14 @@ test_cfg = dict(type='TestLoop')
 
 param_scheduler = [
     dict(
-        type='MultiStepLR',
-        begin=0,
-        end=40,
-        by_epoch=True,
-        milestones=[],
-        gamma=0.1
+        type='ReduceOnPlateauParamScheduler',
+        param_name='lr',  
+        monitor='coco/bbox_mAP',   
+        rule='greater',      
+        factor=0.1,       
+        patience=5,      
+        min_value=1e-5,   
+        by_epoch=True     
     )
 ]
 
