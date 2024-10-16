@@ -12,14 +12,14 @@ classes = ("General trash", "Paper", "Paper pack", "Metal", "Glass",
 # config file 들고오기
 cfg = Config.fromfile('./mmdetection/configs/custom_configs/haegang_test.py')
 
-cfg.work_dir = './mmdetection/work_dirs/cascade_rcnn_noaug'
-checkpoint_path = os.path.join(cfg.work_dir, 'epoch_31.pth')
+cfg.work_dir = './mmdetection/work_dirs/cascade_rcnn_swinL'
+checkpoint_path = os.path.join(cfg.work_dir, 'epoch_9.pth')
 
 model = init_detector(cfg, checkpoint_path, device='cuda:0')
 
 
 # COCO 객체 생성 및 이미지 ID 불러오기
-annotation_file = './dataset/test.json'
+annotation_file = '../dataset/test.json'
 coco = COCO(annotation_file)
 img_ids = coco.getImgIds()
 
@@ -33,7 +33,7 @@ for img_id in tqdm(img_ids):
     file_names.append(img_info['file_name'])
     
     # 이미지 경로 설정
-    img_path = os.path.join('./dataset/', img_info['file_name'])
+    img_path = os.path.join('../dataset/', img_info['file_name'])
     
     # 인퍼런스 실행
     result = inference_detector(model, img_path)

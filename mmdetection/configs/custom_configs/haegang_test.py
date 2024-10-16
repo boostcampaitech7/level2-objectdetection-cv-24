@@ -10,10 +10,42 @@ classes = ('General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
 # 데이터 파이프라인 설정
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type='LoadAnnotations', with_bbox=True, with_label=True),
     dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
-    dict(type='PackDetInputs')  
+    dict(type='RandomFlip', prob=0.5),
+    # dict(type='Rotate', level=1, prob=0.5),
+    dict(type='PhotoMetricDistortion'),
+    dict(
+        type='Albu',
+        transforms=[
+            dict(
+                type='Sharpen',
+                alpha=(0.2, 0.5),
+                lightness=(0.5, 1.5),
+                p=0.5
+            ),
+            dict(
+                type='GaussNoise',
+                var_limit=(50.0, 100.0), 
+                p=0.5
+            )
+        ],
+        bbox_params=dict(
+            type='BboxParams',
+            format='pascal_voc',
+            label_fields=['gt_bboxes_labels', 'gt_ignore_flags'],
+            min_visibility=0.0,
+            filter_lost_elements=True),
+        keymap={
+            'img': 'image',
+            'gt_masks': 'masks',
+            'gt_bboxes': 'bboxes'
+        },
+        skip_img_without_anno=True
+    ),
+    dict(type='PackDetInputs')
 ]
+
 
 
 
@@ -117,7 +149,7 @@ param_scheduler = [
     dict(
         type='ReduceOnPlateauParamScheduler',
         param_name='lr',  
-        monitor='coco/bbox_mAP',   
+        monitor='coco/bbox_mAP_50',   
         rule='greater',      
         factor=0.1,       
         patience=5,      
@@ -126,10 +158,14 @@ param_scheduler = [
     )
 ]
 
-work_dir = './work_dirs/codetr_swin_transformer'
-
 default_hooks = dict(
-    checkpoint=dict(type='CheckpointHook', interval=1, max_keep_ckpts=3),
+    checkpoint=dict(
+        type='CheckpointHook',
+        interval=1,  
+        max_keep_ckpts=3,  
+        save_best='auto', 
+        rule='greater'
+    ),
     logger=dict(type='LoggerHook', interval=50)
 )
 
