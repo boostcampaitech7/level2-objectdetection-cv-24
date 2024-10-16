@@ -12,8 +12,8 @@ classes = ("General trash", "Paper", "Paper pack", "Metal", "Glass",
 # config file 들고오기
 cfg = Config.fromfile('./mmdetection/configs/custom_configs/haegang_test.py')
 
-cfg.work_dir = './mmdetection/work_dirs/cascade_rcnn_gausiannoise'
-checkpoint_path = os.path.join(cfg.work_dir, 'best.pth')
+cfg.work_dir = './mmdetection/work_dirs/cascade_rcnn_sharpen'
+checkpoint_path = os.path.join(cfg.work_dir, 'epoch_14.pth')
 
 model = init_detector(cfg, checkpoint_path, device='cuda:0')
 
