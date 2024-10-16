@@ -50,11 +50,8 @@ def perform_wbf(predictions, image_size=(1024, 1024), iou_thr=0.5, skip_box_thr=
         boxes, scores, labels = parse_prediction_string(pred)
         
         if len(boxes) > 0:
-            # 박스 정규화
             boxes[:, [0, 2]] /= image_size[0]
             boxes[:, [1, 3]] /= image_size[1]
-            
-            # 0과 1 사이로 클리핑
             boxes = np.clip(boxes, 0, 1)
             
             boxes_list.append(boxes)
@@ -62,16 +59,18 @@ def perform_wbf(predictions, image_size=(1024, 1024), iou_thr=0.5, skip_box_thr=
             labels_list.append(labels)
     
     if len(boxes_list) > 0:
+        # 여기서 weights를 동적으로 조정
+        if weights and len(weights) != len(boxes_list):
+            weights = weights[:len(boxes_list)]
+        
         boxes, scores, labels = weighted_boxes_fusion(
             boxes_list, scores_list, labels_list, weights=weights,
             iou_thr=iou_thr, skip_box_thr=skip_box_thr
         )
         
-        # 박스 역정규화
         boxes[:, [0, 2]] *= image_size[0]
         boxes[:, [1, 3]] *= image_size[1]
     else:
-        # 예측 결과가 없는 경우 빈 배열 반환
         boxes = np.array([])
         scores = np.array([])
         labels = np.array([])
@@ -143,8 +142,8 @@ def parse_prediction_string(pred_string):
 csv_files = ['/data/ephemeral/home/eva_test/mmdetection/checkpoints/grid_rcnn.csv',
              '/data/ephemeral/home/eva_test/mmdetection/checkpoints/retianet_r50.csv',
              '/data/ephemeral/home/eva_test/mmdetection/checkpoints/align_detr.csv',
-             '/data/ephemeral/home/eva_test/mmdetection/checkpoints/cascade_rcnn.csv',
-             '/data/ephemeral/home/eva_test/mmdetection/checkpoints/fcos_x101.csv']
+             '/data/ephemeral/home/eva_test/mmdetection/checkpoints/fcos_x101.csv',
+             '/data/ephemeral/home/eva_test/mmdetection/checkpoints/cascade_rcnn_no_aug.csv']
 output_file = 'ensemble_predictions.csv'
 weights = [1, 1, 1, 1, 1]  # 각 모델에 동일한 가중치 적용
 
