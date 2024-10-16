@@ -6,6 +6,7 @@ from mmdet.utils import register_all_modules
 from mmdet.registry import MODELS
 from mmengine.registry import MODELS as ENGINE_MODELS
 from mmdet.models import DetDataPreprocessor
+import wandb
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detection model')
@@ -20,6 +21,7 @@ def parse_args():
 def main():
     args = parse_args()
 
+    wandb.init(project="wj3714-naver-ai-boostcamp-org", job_type="baseline")
     
     # 모든 mmdetection 모듈을 등록
     register_all_modules()
@@ -57,8 +59,9 @@ def main():
 
     # Runner 생성 및 학습 시작
     runner = Runner.from_cfg(cfg)
+    runner.log_wandb = True 
+    
     runner.train()
-
 
 if __name__ == '__main__':
     main()

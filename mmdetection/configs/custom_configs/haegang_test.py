@@ -1,6 +1,17 @@
 _base_ = [
-    '../../configs/cascade_rcnn/cascade_rcnn_swinL.py'
+    '../../configs/cascade_rcnn/cascade-rcnn_x101_64x4d_fpn_20e_coco.py'
 ]
+import sys
+import os
+
+# custom_hooks.py가 위치한 디렉토리 경로를 추가
+sys.path.append(os.path.abspath('/data/ephemeral/home/level2-objectdetection-cv-24/mmdetection'))
+
+# Custom imports 설정
+custom_imports = dict(
+    imports=['custom_hooks'],  # custom_hooks.py 파일을 임포트
+    allow_failed_imports=True
+)
 
 dataset_type = 'CocoDataset'
 data_root = '../dataset/'
@@ -27,7 +38,7 @@ train_pipeline = [
             dict(
                 type='GaussNoise',
                 var_limit=(50.0, 100.0), 
-                p=0.5
+                p=0.5  
             )
         ],
         bbox_params=dict(
@@ -64,7 +75,7 @@ test_pipeline = [
 
 # 데이터 로더 설정
 train_dataloader = dict(
-    batch_size=2,
+    batch_size=4,
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
@@ -114,7 +125,7 @@ test_dataloader = dict(
 optim_wrapper = dict(
     _delete_=True,
     type='OptimWrapper',
-    optimizer=dict(type='AdamW', lr=2e-4, weight_decay=0.0001),
+    optimizer=dict(type='AdamW', lr=1e-5, weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
     paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)})
 )
@@ -127,6 +138,7 @@ val_evaluator = dict(
     classwise=True
 )
 
+
 test_evaluator = dict(
     type='CocoMetric',
     ann_file=data_root + 'test.json',
@@ -138,7 +150,7 @@ test_evaluator = dict(
 train_cfg = dict(
     _delete_=True,
     type='EpochBasedTrainLoop',
-    max_epochs=40,
+    max_epochs=50,
     val_interval=1
 )
 
@@ -170,3 +182,11 @@ default_hooks = dict(
 )
 
 log_processor = dict(by_epoch=True)
+
+# 모델 설정 변경
+model = dict(
+    bbox_head=dict(
+        num_classes=10,  # 클래스 수를 10으로 설정
+        init_cfg=dict(type='Normal', std=0.01)  # 헤드 초기화 설정
+    )
+)
