@@ -27,7 +27,7 @@ def main():
 
     # config 파일 로드
     cfg = Config.fromfile(args.config)
-
+    
     
 
     # 작업 디렉토리 설정
@@ -51,9 +51,14 @@ def main():
     # 설정 출력 (디버깅용)
     #print(cfg.pretty_text)
 
+    # 폴드 수와 JSON 경로 설정
+    num_folds = 5
+    all_fold_metrics = []
+
     # Runner 생성 및 학습 시작
     runner = Runner.from_cfg(cfg)
     runner.train()
+
 
 if __name__ == '__main__':
     main()

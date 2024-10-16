@@ -468,4 +468,4 @@ visualizer = dict(
     vis_backends=[
         dict(type='LocalVisBackend'),
     ])
-work_dir = './mmdetection/work_dirs/codetr_swin_lsj'
+work_dir = './mmdetection/work_dirs/cascade_rcnn_gausiannoise'

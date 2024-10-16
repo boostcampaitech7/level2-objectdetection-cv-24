@@ -393,6 +393,21 @@ train_dataloader = dict(
                 1024,
             ), type='Resize'),
             dict(type='PackDetInputs'),
+            dict(
+                bbox_params=dict(
+                    format='pascal_voc',
+                    label_fields=[
+                        'gt_labels',
+                    ],
+                    type='BboxParams'),
+                keymap=dict(gt_bboxes='bboxes', gt_masks='masks', img='image'),
+                transforms=[
+                    dict(p=0.5, type='GaussNoise', var_limit=(
+                        50.0,
+                        100.0,
+                    )),
+                ],
+                type='Albu'),
         ],
         type='CocoDataset'),
     num_workers=2,
@@ -406,6 +421,21 @@ train_pipeline = [
         1024,
     ), type='Resize'),
     dict(type='PackDetInputs'),
+    dict(
+        bbox_params=dict(
+            format='pascal_voc',
+            label_fields=[
+                'gt_labels',
+            ],
+            type='BboxParams'),
+        keymap=dict(gt_bboxes='bboxes', gt_masks='masks', img='image'),
+        transforms=[
+            dict(p=0.5, type='GaussNoise', var_limit=(
+                50.0,
+                100.0,
+            )),
+        ],
+        type='Albu'),
 ]
 val_cfg = dict(type='ValLoop')
 val_dataloader = dict(
@@ -468,4 +498,4 @@ visualizer = dict(
     vis_backends=[
         dict(type='LocalVisBackend'),
     ])
-work_dir = './mmdetection/work_dirs/codetr_swin_lsj'
+work_dir = './mmdetection/work_dirs/cascade_rcnn_gausiannoise'

@@ -12,10 +12,32 @@ train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
-    dict(type='RandomFlip', prob=0.5),
-    dict(type='PhotoMetricDistortion'),
-    dict(type='PackDetInputs')
+    dict(
+        type='Albu',
+        transforms=[
+            dict(
+                type='GaussNoise',
+                var_limit=(50.0, 100.0), 
+                p=0.5  
+            )
+        ],
+        bbox_params=dict(
+            type='BboxParams',
+            format='pascal_voc',
+            label_fields=['gt_bboxes_labels', 'gt_ignore_flags'],
+            min_visibility=0.0,
+            filter_lost_elements=True),
+        keymap={
+            'img': 'image',
+            'gt_masks': 'masks',
+            'gt_bboxes': 'bboxes'
+        },
+        skip_img_without_anno=True)
+    ,
+    dict(type='PackDetInputs')  
 ]
+
+
 
 val_pipeline = [
     dict(type='LoadImageFromFile'),

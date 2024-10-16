@@ -392,6 +392,14 @@ train_dataloader = dict(
                 1024,
                 1024,
             ), type='Resize'),
+            dict(
+                transforms=[
+                    dict(p=0.5, type='GaussNoise', var_limit=(
+                        50.0,
+                        100.0,
+                    )),
+                ],
+                type='Albu'),
             dict(type='PackDetInputs'),
         ],
         type='CocoDataset'),
@@ -405,6 +413,14 @@ train_pipeline = [
         1024,
         1024,
     ), type='Resize'),
+    dict(
+        transforms=[
+            dict(p=0.5, type='GaussNoise', var_limit=(
+                50.0,
+                100.0,
+            )),
+        ],
+        type='Albu'),
     dict(type='PackDetInputs'),
 ]
 val_cfg = dict(type='ValLoop')
@@ -468,4 +484,4 @@ visualizer = dict(
     vis_backends=[
         dict(type='LocalVisBackend'),
     ])
-work_dir = './mmdetection/work_dirs/codetr_swin_lsj'
+work_dir = './mmdetection/work_dirs/cascade_rcnn_gausiannoise'

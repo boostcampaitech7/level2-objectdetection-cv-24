@@ -392,6 +392,25 @@ train_dataloader = dict(
                 1024,
                 1024,
             ), type='Resize'),
+            dict(
+                bbox_params=dict(
+                    filter_lost_elements=True,
+                    format='pascal_voc',
+                    label_fields=[
+                        'gt_bboxes_labels',
+                        'gt_ignore_flags',
+                    ],
+                    min_visibility=0.0,
+                    type='BboxParams'),
+                keymap=dict(gt_bboxes='bboxes', gt_masks='masks', img='image'),
+                skip_img_without_anno=True,
+                transforms=[
+                    dict(p=0.5, type='GaussNoise', var_limit=(
+                        50.0,
+                        100.0,
+                    )),
+                ],
+                type='Albu'),
             dict(type='PackDetInputs'),
         ],
         type='CocoDataset'),
@@ -405,6 +424,25 @@ train_pipeline = [
         1024,
         1024,
     ), type='Resize'),
+    dict(
+        bbox_params=dict(
+            filter_lost_elements=True,
+            format='pascal_voc',
+            label_fields=[
+                'gt_bboxes_labels',
+                'gt_ignore_flags',
+            ],
+            min_visibility=0.0,
+            type='BboxParams'),
+        keymap=dict(gt_bboxes='bboxes', gt_masks='masks', img='image'),
+        skip_img_without_anno=True,
+        transforms=[
+            dict(p=0.5, type='GaussNoise', var_limit=(
+                50.0,
+                100.0,
+            )),
+        ],
+        type='Albu'),
     dict(type='PackDetInputs'),
 ]
 val_cfg = dict(type='ValLoop')
@@ -468,4 +506,4 @@ visualizer = dict(
     vis_backends=[
         dict(type='LocalVisBackend'),
     ])
-work_dir = './mmdetection/work_dirs/codetr_swin_lsj'
+work_dir = './mmdetection/work_dirs/cascade_rcnn_gausiannoise'

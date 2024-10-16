@@ -36,14 +36,14 @@ def main():
         os.makedirs(output_dir, exist_ok=True)
 
         # Image directory
-        image_dir = './dataset/train'  # Adjust as needed
+        image_dir = './dataset/train'
         train_image_dir = os.path.join(output_dir, f'fold_{fold_num}/train/')
         val_image_dir = os.path.join(output_dir, f'fold_{fold_num}/val/')
         
         os.makedirs(train_image_dir, exist_ok=True)
         os.makedirs(val_image_dir, exist_ok=True)
 
-        # Training and validation data storage
+        # Train, val data 저장소
         train_data = {'annotations': [], 'images': []}
         val_data = {'annotations': [], 'images': []}
 
@@ -51,9 +51,9 @@ def main():
             ann = data['annotations'][idx]
             train_data['annotations'].append(ann)
             # 4자리 문자열로 변환
-            image_id = f"{int(ann['image_id']):04d}"  # 앞에 0을 붙여서 4자리로 만듭니다.
+            image_id = f"{int(ann['image_id']):04d}"  # 앞에 0을 붙여서 4자리로 만듦
             # Copy images
-            image_path = os.path.join(image_dir, f"{image_id}.jpg")  # Adjust extension if needed
+            image_path = os.path.join(image_dir, f"{image_id}.jpg")
             shutil.copy(image_path, train_image_dir)
 
         for idx in val_indices:
@@ -62,7 +62,7 @@ def main():
             # 4자리 문자열로 변환
             image_id = f"{int(ann['image_id']):04d}"
             # Copy images
-            image_path = os.path.join(image_dir, f"{image_id}.jpg")  # Adjust extension if needed
+            image_path = os.path.join(image_dir, f"{image_id}.jpg")
             shutil.copy(image_path, val_image_dir)
 
         # Save JSON files
