@@ -1,6 +1,17 @@
 _base_ = [
-    '../../configs/cascade_rcnn/cascade-rcnn_x101_64x4d_fpn_20e_coco.py'
+    '../../configs/retinanet/retinanet_r101_fpn_2x_coco.py'
 ]
+import sys
+import os
+
+# custom_hooks.py가 위치한 디렉토리 경로를 추가
+sys.path.append(os.path.abspath('/data/ephemeral/home/level2-objectdetection-cv-24/mmdetection'))
+
+# Custom imports 설정
+custom_imports = dict(
+    imports=['custom_hooks'],  # custom_hooks.py 파일을 임포트
+    allow_failed_imports=True
+)
 
 dataset_type = 'CocoDataset'
 data_root = '../dataset/'
@@ -10,10 +21,36 @@ classes = ('General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
 # 데이터 파이프라인 설정
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type='LoadAnnotations', with_bbox=True, with_label=True),
     dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
+    # dict(type='Rotate', level=1, prob=0.5),
     dict(type='PhotoMetricDistortion'),
+    dict(
+        type='Albu',
+        transforms=[
+            dict(
+                type='Cutout',
+                num_holes=8,
+                max_h_size=16,
+                max_w_size=16,
+                fill_value=114.0,
+                p=0.5
+            )
+        ],
+        bbox_params=dict(
+            type='BboxParams',
+            format='pascal_voc',
+            label_fields=['gt_bboxes_labels', 'gt_ignore_flags'],
+            min_visibility=0.0,
+            filter_lost_elements=True),
+        keymap={
+            'img': 'image',
+            'gt_masks': 'masks',
+            'gt_bboxes': 'bboxes'
+        },
+        skip_img_without_anno=True
+    ),
     dict(type='PackDetInputs')
 ]
 
@@ -32,7 +69,7 @@ test_pipeline = [
 
 # 데이터 로더 설정
 train_dataloader = dict(
-    batch_size=4,
+    batch_size=8,
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
@@ -82,7 +119,7 @@ test_dataloader = dict(
 optim_wrapper = dict(
     _delete_=True,
     type='OptimWrapper',
-    optimizer=dict(type='AdamW', lr=2e-4, weight_decay=0.0001),
+    optimizer=dict(type='AdamW', lr=1e-5, weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
     paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)})
 )
@@ -106,7 +143,7 @@ test_evaluator = dict(
 train_cfg = dict(
     _delete_=True,
     type='EpochBasedTrainLoop',
-    max_epochs=40,
+    max_epochs=50,
     val_interval=1
 )
 
@@ -133,4 +170,16 @@ default_hooks = dict(
     logger=dict(type='LoggerHook', interval=50)
 )
 
+custom_hooks=[
+        dict(type='WandbLoggerHook', init_kwargs=dict(project='wj3714-naver-ai-boostcamp-org'))
+    ]
+
 log_processor = dict(by_epoch=True)
+
+# 모델 설정 변경
+model = dict(
+    bbox_head=dict(
+        num_classes=10,  # 클래스 수를 10으로 설정
+        init_cfg=dict(type='Normal', std=0.01)  # 헤드 초기화 설정
+    )
+)
