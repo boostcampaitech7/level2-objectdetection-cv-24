@@ -13,6 +13,13 @@ class WandbLoggerHook(Hook):
     def before_run(self, runner):
         wandb.init(**self.init_kwargs)
         runner.logger.info("Wandb initialized")
+        
+        # Config 값 기록
+        wandb.config.update({
+            'learning_rate': runner.cfg.optimizer.lr,  # optimizer에서 learning_rate 가져오기
+            'batch_size': runner.cfg.data.samples_per_gpu,  # batch_size 가져오기
+            'max_epochs': runner.cfg.total_epochs,  # total_epochs 가져오기
+        })
 
     def after_train_iter(self,
                          runner,
