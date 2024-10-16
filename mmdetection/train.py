@@ -65,6 +65,8 @@ def main():
     # Runner 생성 및 학습 시작
     runner = Runner.from_cfg(cfg)
     add_wandb_callback(runner.model, enable_model_checkpointing=True)
+    runner.log_wandb = True 
+    
     runner.train()
 
     wandb.finish()
