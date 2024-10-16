@@ -1,5 +1,5 @@
 _base_ = [
-    '../../configs/cascade_rcnn/cascade-rcnn_x101_64x4d_fpn_20e_coco.py'
+    '../../configs/cascade_rcnn/cascade_rcnn_swinL.py'
 ]
 import sys
 import os
@@ -182,11 +182,3 @@ default_hooks = dict(
 )
 
 log_processor = dict(by_epoch=True)
-
-# 모델 설정 변경
-model = dict(
-    bbox_head=dict(
-        num_classes=10,  # 클래스 수를 10으로 설정
-        init_cfg=dict(type='Normal', std=0.01)  # 헤드 초기화 설정
-    )
-)
