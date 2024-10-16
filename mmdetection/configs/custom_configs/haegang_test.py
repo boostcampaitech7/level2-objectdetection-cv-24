@@ -16,10 +16,11 @@ train_pipeline = [
         type='Albu',
         transforms=[
             dict(
-                type='GaussNoise',
-                var_limit=(50.0, 100.0), 
-                p=0.5  
-            )
+            type='Sharpen',
+            alpha=(0.2, 0.5),
+            lightness=(0.5, 1.5), 
+            p=0.5 
+        )
         ],
         bbox_params=dict(
             type='BboxParams',
@@ -117,6 +118,7 @@ val_evaluator = dict(
     classwise=True
 )
 
+
 test_evaluator = dict(
     type='CocoMetric',
     ann_file=data_root + 'test.json',
@@ -151,8 +153,22 @@ param_scheduler = [
 work_dir = './work_dirs/codetr_swin_transformer'
 
 default_hooks = dict(
-    checkpoint=dict(type='CheckpointHook', interval=1, max_keep_ckpts=3),
+    checkpoint=dict(
+        type='CheckpointHook',
+        interval=1,  
+        max_keep_ckpts=3,  
+        save_best='auto', 
+        rule='greater'
+    ),
     logger=dict(type='LoggerHook', interval=50)
 )
 
-log_processor = dict(by_epoch=True)
+log_config = dict(
+    interval=1,  # 1 에폭마다 로그 기록
+    hooks=[
+        dict(type='TextLoggerHook'),  # 콘솔에 텍스트 로그 출력
+        dict(type='TensorboardLoggerHook')  # Tensorboard에 로그 기록
+    ]
+)
+
+log_processor = dict(by_epoch=True)  # 에폭 기준으로 로그 기록

@@ -15,7 +15,12 @@ classes = (
 data_root = '../dataset/'
 dataset_type = 'CocoDataset'
 default_hooks = dict(
-    checkpoint=dict(interval=1, max_keep_ckpts=3, type='CheckpointHook'),
+    checkpoint=dict(
+        interval=1,
+        max_keep_ckpts=3,
+        rule='greater',
+        save_best='auto',
+        type='CheckpointHook'),
     logger=dict(interval=50, type='LoggerHook'),
     param_scheduler=dict(type='ParamSchedulerHook'),
     sampler_seed=dict(type='DistSamplerSeedHook'),
@@ -28,13 +33,22 @@ env_cfg = dict(
     dist_cfg=dict(backend='nccl'),
     mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0))
 load_from = None
+log_config = dict(
+    hooks=[
+        dict(type='TextLoggerHook'),
+        dict(type='TensorboardLoggerHook'),
+    ],
+    interval=1)
 log_level = 'INFO'
 log_processor = dict(by_epoch=True, type='LogProcessor', window_size=50)
 model = dict(
     backbone=dict(
-        depth=50,
+        base_width=4,
+        depth=101,
         frozen_stages=1,
-        init_cfg=dict(checkpoint='torchvision://resnet50', type='Pretrained'),
+        groups=64,
+        init_cfg=dict(
+            checkpoint='open-mmlab://resnext101_64x4d', type='Pretrained'),
         norm_cfg=dict(requires_grad=True, type='BN'),
         norm_eval=True,
         num_stages=4,
@@ -45,7 +59,7 @@ model = dict(
             3,
         ),
         style='pytorch',
-        type='ResNet'),
+        type='ResNeXt'),
     data_preprocessor=dict(
         bgr_to_rgb=True,
         mean=[
@@ -293,7 +307,7 @@ model = dict(
     type='CascadeRCNN')
 optim_wrapper = dict(
     clip_grad=dict(max_norm=0.1, norm_type=2),
-    optimizer=dict(lr=2e-05, type='AdamW', weight_decay=0.0001),
+    optimizer=dict(lr=0.0002, type='AdamW', weight_decay=0.0001),
     paramwise_cfg=dict(custom_keys=dict(backbone=dict(lr_mult=0.1))),
     type='OptimWrapper')
 param_scheduler = [
@@ -311,7 +325,7 @@ resume = False
 seed = 42
 test_cfg = dict(type='TestLoop')
 test_dataloader = dict(
-    batch_size=2,
+    batch_size=4,
     dataset=dict(
         ann_file='test.json',
         backend_args=None,
@@ -362,7 +376,7 @@ test_pipeline = [
 train_cfg = dict(max_epochs=40, type='EpochBasedTrainLoop', val_interval=1)
 train_dataloader = dict(
     batch_sampler=dict(type='AspectRatioBatchSampler'),
-    batch_size=1,
+    batch_size=8,
     dataset=dict(
         ann_file='temp_train.json',
         backend_args=None,
@@ -389,8 +403,32 @@ train_dataloader = dict(
                 1024,
                 1024,
             ), type='Resize'),
-            dict(prob=0.5, type='RandomFlip'),
-            dict(type='PhotoMetricDistortion'),
+            dict(
+                bbox_params=dict(
+                    filter_lost_elements=True,
+                    format='pascal_voc',
+                    label_fields=[
+                        'gt_bboxes_labels',
+                        'gt_ignore_flags',
+                    ],
+                    min_visibility=0.0,
+                    type='BboxParams'),
+                keymap=dict(gt_bboxes='bboxes', gt_masks='masks', img='image'),
+                skip_img_without_anno=True,
+                transforms=[
+                    dict(
+                        alpha=(
+                            0.2,
+                            0.5,
+                        ),
+                        lightness=(
+                            0.5,
+                            1.5,
+                        ),
+                        p=0.5,
+                        type='Sharpen'),
+                ],
+                type='Albu'),
             dict(type='PackDetInputs'),
         ],
         type='CocoDataset'),
@@ -404,8 +442,32 @@ train_pipeline = [
         1024,
         1024,
     ), type='Resize'),
-    dict(prob=0.5, type='RandomFlip'),
-    dict(type='PhotoMetricDistortion'),
+    dict(
+        bbox_params=dict(
+            filter_lost_elements=True,
+            format='pascal_voc',
+            label_fields=[
+                'gt_bboxes_labels',
+                'gt_ignore_flags',
+            ],
+            min_visibility=0.0,
+            type='BboxParams'),
+        keymap=dict(gt_bboxes='bboxes', gt_masks='masks', img='image'),
+        skip_img_without_anno=True,
+        transforms=[
+            dict(
+                alpha=(
+                    0.2,
+                    0.5,
+                ),
+                lightness=(
+                    0.5,
+                    1.5,
+                ),
+                p=0.5,
+                type='Sharpen'),
+        ],
+        type='Albu'),
     dict(type='PackDetInputs'),
 ]
 val_cfg = dict(type='ValLoop')
@@ -469,4 +531,4 @@ visualizer = dict(
     vis_backends=[
         dict(type='LocalVisBackend'),
     ])
-work_dir = './mmdetection/work_dirs/cascade_rcnn'
+work_dir = './mmdetection/work_dirs/cascade_rcnn_sharpen'
