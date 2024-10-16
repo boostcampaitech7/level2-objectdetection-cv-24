@@ -36,33 +36,43 @@ def main():
         os.makedirs(output_dir, exist_ok=True)
 
         # Image directory
-        image_dir = './dataset/train'
+        image_dir = './dataset/train'  # Adjust as needed
         train_image_dir = os.path.join(output_dir, f'fold_{fold_num}/train/')
         val_image_dir = os.path.join(output_dir, f'fold_{fold_num}/val/')
         
         os.makedirs(train_image_dir, exist_ok=True)
         os.makedirs(val_image_dir, exist_ok=True)
 
-        # Train, val data 저장소
-        train_data = {'annotations': [], 'images': []}
-        val_data = {'annotations': [], 'images': []}
+        # Training and validation data storage
+        train_data = {'info':data['info'], 'licenses':data['licenses'], 'images': [], 'categoires':data['categories'], 'annotations': []}
+        val_data = {'info':data['info'], 'licenses':data['licenses'], 'images': [], 'categoires':data['categories'], 'annotations': []}
 
-        for idx in train_indices:
-            ann = data['annotations'][idx]
+        for train_idx in train_indices:
+            ann = data['annotations'][train_idx]
+            img = data['images'][ann['image_id']]
             train_data['annotations'].append(ann)
+
+            if img not in train_data['images']:
+                train_data['images'].append(img)
+
             # 4자리 문자열로 변환
-            image_id = f"{int(ann['image_id']):04d}"  # 앞에 0을 붙여서 4자리로 만듦
+            image_id = f"{int(ann['image_id']):04d}"  # 앞에 0을 붙여서 4자리로 만듭니다.
             # Copy images
-            image_path = os.path.join(image_dir, f"{image_id}.jpg")
+            image_path = os.path.join(image_dir, f"{image_id}.jpg")  # Adjust extension if needed
             shutil.copy(image_path, train_image_dir)
 
-        for idx in val_indices:
-            ann = data['annotations'][idx]
+        for val_idx in val_indices:
+            ann = data['annotations'][val_idx]
+            img = data['images'][ann['image_id']]
             val_data['annotations'].append(ann)
+
+            if img not in val_data['images']:
+                val_data['images'].append(img)
+                
             # 4자리 문자열로 변환
             image_id = f"{int(ann['image_id']):04d}"
             # Copy images
-            image_path = os.path.join(image_dir, f"{image_id}.jpg")
+            image_path = os.path.join(image_dir, f"{image_id}.jpg")  # Adjust extension if needed
             shutil.copy(image_path, val_image_dir)
 
         # Save JSON files
