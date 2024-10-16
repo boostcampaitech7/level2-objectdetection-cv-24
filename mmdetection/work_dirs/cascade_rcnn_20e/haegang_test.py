@@ -27,7 +27,7 @@ env_cfg = dict(
     cudnn_benchmark=False,
     dist_cfg=dict(backend='nccl'),
     mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0))
-load_from = None
+load_from = './mmdetection/work_dirs/cascade_rcnn_20e/epoch_40.pth'
 log_level = 'INFO'
 log_processor = dict(by_epoch=True, type='LogProcessor', window_size=50)
 model = dict(
@@ -310,7 +310,7 @@ param_scheduler = [
         rule='greater',
         type='ReduceOnPlateauParamScheduler'),
 ]
-resume = False
+resume = True
 seed = 42
 test_cfg = dict(type='TestLoop')
 test_dataloader = dict(
@@ -392,8 +392,6 @@ train_dataloader = dict(
                 1024,
                 1024,
             ), type='Resize'),
-            dict(prob=0.5, type='RandomFlip'),
-            dict(type='PhotoMetricDistortion'),
             dict(type='PackDetInputs'),
         ],
         type='CocoDataset'),
@@ -407,8 +405,6 @@ train_pipeline = [
         1024,
         1024,
     ), type='Resize'),
-    dict(prob=0.5, type='RandomFlip'),
-    dict(type='PhotoMetricDistortion'),
     dict(type='PackDetInputs'),
 ]
 val_cfg = dict(type='ValLoop')

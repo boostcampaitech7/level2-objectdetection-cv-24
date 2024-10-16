@@ -10,10 +10,10 @@ classes = ("General trash", "Paper", "Paper pack", "Metal", "Glass",
            "Plastic", "Styrofoam", "Plastic bag", "Battery", "Clothing")
 
 # config file 들고오기
-cfg = Config.fromfile('./mmdetection/configs/yolo/yolov5_m_8xb16-300e_coco.py')
+cfg = Config.fromfile('./mmdetection/configs/custom_configs/haegang_test.py')
 
-cfg.work_dir = './mmdetection/work_dirs/yolov5'
-checkpoint_path = os.path.join(cfg.work_dir, 'epoch_300.pth')
+cfg.work_dir = './mmdetection/work_dirs/cascade_rcnn_noaug'
+checkpoint_path = os.path.join(cfg.work_dir, 'epoch_31.pth')
 
 model = init_detector(cfg, checkpoint_path, device='cuda:0')
 

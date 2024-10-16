@@ -54,6 +54,8 @@ train_pipeline = [
     dict(type='PackDetInputs')
 ]
 
+
+
 val_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
