@@ -17,16 +17,6 @@ checkpoint_path = os.path.join(cfg.work_dir, 'cascade-rcnn_x101-64x4d_fpn_1x_coc
 
 model = init_detector(cfg, checkpoint_path, device='cuda:0')
 
-# test.json 처리, test.json파일 경로
-test_annotation_file = '/data/ephemeral/home/dataset/test.json'
-test_output_file = 'submission_test.csv'
-process_annotations(test_annotation_file, test_output_file)
-
-# correlation.json 처리, correlation.json파일 경로
-correlation_annotation_file = '/data/ephemeral/home/dataset/correlation.json'
-correlation_output_file = 'submission_correlation.csv'
-process_annotations(correlation_annotation_file, correlation_output_file)
-
 def process_annotations(annotation_file, output_file):
     # COCO 객체 생성 및 이미지 ID 불러오기
     coco = COCO(annotation_file)
@@ -73,3 +63,13 @@ def process_annotations(annotation_file, output_file):
 
     print(f"Submission file saved at: {output_file}")
     print(submission.head())
+
+# test.json 처리, test.json파일 경로
+test_annotation_file = '/data/ephemeral/home/dataset/test.json'
+test_output_file = 'submission_test.csv'
+process_annotations(test_annotation_file, test_output_file)
+
+# correlation.json 처리, correlation.json파일 경로
+correlation_annotation_file = '/data/ephemeral/home/dataset/correlation.json'
+correlation_output_file = 'submission_correlation.csv'
+process_annotations(correlation_annotation_file, correlation_output_file)
