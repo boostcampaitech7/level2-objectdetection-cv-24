@@ -322,17 +322,17 @@ model = dict(
     type='CascadeRCNN')
 optim_wrapper = dict(
     clip_grad=dict(max_norm=0.1, norm_type=2),
-    optimizer=dict(lr=0.0002, type='AdamW', weight_decay=0.0001),
+    optimizer=dict(lr=1e-05, type='AdamW', weight_decay=0.0001),
     paramwise_cfg=dict(custom_keys=dict(backbone=dict(lr_mult=0.1))),
     type='OptimWrapper')
 param_scheduler = [
     dict(
         by_epoch=True,
-        factor=0.5,
+        factor=0.1,
         min_value=1e-05,
         monitor='coco/bbox_mAP_50',
         param_name='lr',
-        patience=3,
+        patience=5,
         rule='greater',
         type='ReduceOnPlateauParamScheduler'),
 ]
@@ -413,11 +413,12 @@ train_dataloader = dict(
             )),
         pipeline=[
             dict(type='LoadImageFromFile'),
-            dict(type='LoadAnnotations', with_bbox=True),
+            dict(type='LoadAnnotations', with_bbox=True, with_label=True),
             dict(keep_ratio=True, scale=(
                 1024,
                 1024,
             ), type='Resize'),
+            dict(prob=0.5, type='RandomFlip'),
             dict(type='PhotoMetricDistortion'),
             dict(
                 bbox_params=dict(
@@ -457,11 +458,12 @@ train_dataloader = dict(
     sampler=dict(shuffle=True, type='DefaultSampler'))
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type='LoadAnnotations', with_bbox=True, with_label=True),
     dict(keep_ratio=True, scale=(
         1024,
         1024,
     ), type='Resize'),
+    dict(prob=0.5, type='RandomFlip'),
     dict(type='PhotoMetricDistortion'),
     dict(
         bbox_params=dict(

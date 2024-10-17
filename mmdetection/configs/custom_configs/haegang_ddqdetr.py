@@ -174,20 +174,10 @@ default_hooks = dict(
         type='CheckpointHook',
         interval=1,  
         max_keep_ckpts=3,  
-        save_best='auto', 
+        save_best='bbox_mAP_50', 
         rule='greater'
     ),
     logger=dict(type='LoggerHook', interval=50)
 )
-
-custom_hooks = [
-    dict(
-        type='EarlyStoppingHook',
-        monitor='bbox_mAP',  #판단 척도, bbox_mAP_50이 리더보드 점수 / 일반적인 성능이 bbox_mAP라 알아서 골라야함
-        min_delta=0.001,      # 최소 향상 정도 : 이정도는 올라가야 성능 좋아진거라 봄
-        patience=7,           #n에폭 연속 못올라가면 사망(위 param scheduler patience보다는 커야지 안그러면 lr조정도 안하고 early stop)
-        rule='greater'        
-    )
-]
 
 log_processor = dict(by_epoch=True)

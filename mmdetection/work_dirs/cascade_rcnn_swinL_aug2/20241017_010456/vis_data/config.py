@@ -413,11 +413,12 @@ train_dataloader = dict(
             )),
         pipeline=[
             dict(type='LoadImageFromFile'),
-            dict(type='LoadAnnotations', with_bbox=True),
+            dict(type='LoadAnnotations', with_bbox=True, with_label=True),
             dict(keep_ratio=True, scale=(
                 1024,
                 1024,
             ), type='Resize'),
+            dict(prob=0.5, type='RandomFlip'),
             dict(type='PhotoMetricDistortion'),
             dict(
                 bbox_params=dict(
@@ -457,11 +458,12 @@ train_dataloader = dict(
     sampler=dict(shuffle=True, type='DefaultSampler'))
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type='LoadAnnotations', with_bbox=True, with_label=True),
     dict(keep_ratio=True, scale=(
         1024,
         1024,
     ), type='Resize'),
+    dict(prob=0.5, type='RandomFlip'),
     dict(type='PhotoMetricDistortion'),
     dict(
         bbox_params=dict(
