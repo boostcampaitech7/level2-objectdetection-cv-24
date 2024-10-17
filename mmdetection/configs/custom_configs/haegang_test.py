@@ -1,5 +1,5 @@
 _base_ = [
-    '../../configs/retinanet/retinanet_r101_fpn_2x_coco.py'
+    '../../configs/cascade_rcnn/cascade-rcnn_x101_64x4d_fpn_20e_coco.py'
 ]
 import sys
 import os
@@ -21,20 +21,23 @@ classes = ('General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
 # 데이터 파이프라인 설정
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True, with_label=True),
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
-    dict(type='RandomFlip', prob=0.5),
-    # dict(type='Rotate', level=1, prob=0.5),
     dict(type='PhotoMetricDistortion'),
     dict(
         type='Albu',
         transforms=[
             dict(
-            type='Sharpen',
-            alpha=(0.2, 0.5),
-            lightness=(0.5, 1.5), 
-            p=0.5 
-        )
+                type='Sharpen',
+                alpha=(0.2, 0.5),
+                lightness=(0.5, 1.5),
+                p=0.5
+            ),
+            dict(
+                type='GaussNoise',
+                var_limit=(50.0, 100.0), 
+                p=0.5
+            )
         ],
         bbox_params=dict(
             type='BboxParams',
@@ -69,7 +72,7 @@ test_pipeline = [
 
 # 데이터 로더 설정
 train_dataloader = dict(
-    batch_size=8,
+    batch_size=4,
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
@@ -119,9 +122,9 @@ test_dataloader = dict(
 optim_wrapper = dict(
     _delete_=True,
     type='OptimWrapper',
-    optimizer=dict(type='AdamW', lr=1e-5, weight_decay=0.0001),
+    optimizer=dict(type='AdamW', lr=2e-4, weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
-    paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)})
+    #paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)})
 )
 
 val_evaluator = dict(
@@ -155,11 +158,11 @@ param_scheduler = [
     dict(
         type='ReduceOnPlateauParamScheduler',
         param_name='lr',  
-        monitor='coco/bbox_mAP',   
+        monitor='coco/bbox_mAP_50',   
         rule='greater',      
-        factor=0.1,       
-        patience=5,      
-        min_value=1e-5,   
+        factor=0.5,       
+        patience=3,      
+        min_value=1e-6,   
         by_epoch=True     
     )
 ]
@@ -171,18 +174,10 @@ default_hooks = dict(
         type='CheckpointHook',
         interval=1,  
         max_keep_ckpts=3,  
-        save_best='auto', 
+        save_best='bbox_mAP_50', 
         rule='greater'
     ),
     logger=dict(type='LoggerHook', interval=50)
 )
 
 log_processor = dict(by_epoch=True)
-
-# 모델 설정 변경
-model = dict(
-    bbox_head=dict(
-        num_classes=10,  # 클래스 수를 10으로 설정
-        init_cfg=dict(type='Normal', std=0.01)  # 헤드 초기화 설정
-    )
-)
