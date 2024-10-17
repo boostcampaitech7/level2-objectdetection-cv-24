@@ -49,28 +49,25 @@ def main():
     num_folds = 5
     metrics = []
 
+    # default num_folds = 5
     for fold in range(num_folds):
         print(f"Training on fold {fold + 1}/{num_folds}")
 
         # JSON 파일 경로 설정
-        train_json = f'./fold_{fold}_train.json'
-        val_json = f'./fold_{fold}_val.json'
-        data_root = '../kfold'
+        train_json = f'fold_{fold}_train.json'
+        val_json = f'fold_{fold}_val.json'
+        data_root = '../kfold/'
+
+        cfg.data_root = data_root
 
         # 데이터 로더 설정
-        cfg.data.train.ann_file = train_json
-        cfg.data.val.ann_file = val_json
+        cfg.train_dataloader.dataset.ann_file = train_json
+        cfg.train_dataloader.dataset.data_root = data_root
 
-        cfg.train_dataloader.ann_file = train_json
-        cfg.train_dataloader.data_root = data_root
+        cfg.val_dataloader.dataset.ann_file = val_json
+        cfg.val_dataloader.dataset.data_root = data_root
 
-        cfg.val_dataloader.ann_file = val_json
-        cfg.val_dataloader.data_root = data_root
-
-        cfg.val_evaluater.ann_file = f'../kfold/fold_{fold}_val.json'
-        cfg.test_dataloader.ann_file = '../dataset/test.json'
-        cfg.test_dataloader.data_root = '../dataset'
-        cfg.test_evaluater.annfile = '../dataset/test.json'
+        cfg.val_evaluator.ann_file = data_root + val_json
 
         # Runner 생성 및 학습 시작
         runner = Runner.from_cfg(cfg)

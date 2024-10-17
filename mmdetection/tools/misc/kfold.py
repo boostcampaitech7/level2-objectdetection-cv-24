@@ -36,15 +36,20 @@ def main():
         os.makedirs(output_dir, exist_ok=True)
 
         # Image directory
-        image_dir = './dataset/train'  # Adjust as needed
+        image_dir = './dataset/train'
+
+        '''
+        이미지 폴더 만드는 파트(필요없음)
+
         train_image_dir = os.path.join(output_dir, f'fold_{fold_num}/train/')
         val_image_dir = os.path.join(output_dir, f'fold_{fold_num}/val/')
         
         os.makedirs(train_image_dir, exist_ok=True)
         os.makedirs(val_image_dir, exist_ok=True)
+        '''
 
         # Training and validation data storage
-        train_data = {'info':data['info'], 'licenses':data['licenses'], 'images': [], 'categoires':data['categories'], 'annotations': []}
+        train_data = {'info':data['info'], 'licenses':data['licenses'], 'images': [], 'categories':data['categories'], 'annotations': []}
         val_data = {'info':data['info'], 'licenses':data['licenses'], 'images': [], 'categoires':data['categories'], 'annotations': []}
 
         for train_idx in train_indices:
@@ -57,9 +62,9 @@ def main():
 
             # 4자리 문자열로 변환
             image_id = f"{int(ann['image_id']):04d}"  # 앞에 0을 붙여서 4자리로 만듭니다.
-            # Copy images
-            image_path = os.path.join(image_dir, f"{image_id}.jpg")  # Adjust extension if needed
-            shutil.copy(image_path, train_image_dir)
+            # Copy images(이미지 파일 필요없음)
+            # image_path = os.path.join(image_dir, f"{image_id}.jpg")  # Adjust extension if needed
+            # shutil.copy(image_path, train_image_dir)
 
         for val_idx in val_indices:
             ann = data['annotations'][val_idx]
@@ -71,9 +76,9 @@ def main():
                 
             # 4자리 문자열로 변환
             image_id = f"{int(ann['image_id']):04d}"
-            # Copy images
-            image_path = os.path.join(image_dir, f"{image_id}.jpg")  # Adjust extension if needed
-            shutil.copy(image_path, val_image_dir)
+            # Copy images(이미지 파일 필요없음)
+            # image_path = os.path.join(image_dir, f"{image_id}.jpg")  # Adjust extension if needed
+            # shutil.copy(image_path, val_image_dir)
 
         # Save JSON files
         with open(os.path.join(output_dir, f'fold_{fold_num}_train.json'), 'w') as f:
