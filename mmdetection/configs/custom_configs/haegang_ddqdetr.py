@@ -1,5 +1,5 @@
 _base_ = [
-    '../../configs/cascade_rcnn/cascade-rcnn_x101_64x4d_fpn_20e_coco.py'
+    '../../configs/cascade_rcnn/cascade_rcnn_swinL.py'
 ]
 import sys
 import os
@@ -23,18 +23,22 @@ train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
-    dict(type='RandomFlip', prob=0.5),
-    # dict(type='Rotate', level=1, prob=0.5),
+
     dict(type='PhotoMetricDistortion'),
     dict(
         type='Albu',
         transforms=[
             dict(
-            type='Sharpen',
-            alpha=(0.2, 0.5),
-            lightness=(0.5, 1.5), 
-            p=0.5 
-        )
+                type='Sharpen',
+                alpha=(0.2, 0.5),
+                lightness=(0.5, 1.5),
+                p=0.5
+            ),
+            dict(
+                type='GaussNoise',
+                var_limit=(50.0, 100.0), 
+                p=0.5  
+            )
         ],
         bbox_params=dict(
             type='BboxParams',
@@ -70,7 +74,7 @@ test_pipeline = [
 
 # 데이터 로더 설정
 train_dataloader = dict(
-    batch_size=8,
+    batch_size=2,
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
@@ -175,15 +179,5 @@ default_hooks = dict(
     ),
     logger=dict(type='LoggerHook', interval=50)
 )
-
-custom_hooks = [
-    dict(
-        type='EarlyStoppingHook',
-        monitor='bbox_mAP',  #판단 척도, bbox_mAP_50이 리더보드 점수 / 일반적인 성능이 bbox_mAP라 알아서 골라야함
-        min_delta=0.001,      # 최소 향상 정도 : 이정도는 올라가야 성능 좋아진거라 봄
-        patience=7,           #n에폭 연속 못올라가면 사망(위 param scheduler patience보다는 커야지 안그러면 lr조정도 안하고 early stop)
-        rule='greater'        
-    )
-]
 
 log_processor = dict(by_epoch=True)

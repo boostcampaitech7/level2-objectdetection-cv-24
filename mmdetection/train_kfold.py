@@ -2,11 +2,11 @@ import argparse
 import torch
 from mmengine.config import Config
 from mmengine.runner import Runner
-from mmdet.utils import register_all_modules 
+from mmdet.utils import register_all_modules
 from mmdet.registry import MODELS
 from mmengine.registry import MODELS as ENGINE_MODELS
 from mmdet.models import DetDataPreprocessor
-import wandb
+from mmengine.evaluator import Evaluator
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detection model')
@@ -21,16 +21,11 @@ def parse_args():
 def main():
     args = parse_args()
 
-    wandb.init(project="wj3714-naver-ai-boostcamp-org", job_type="baseline")
-    
     # 모든 mmdetection 모듈을 등록
     register_all_modules()
 
-
     # config 파일 로드
     cfg = Config.fromfile(args.config)
-    
-    
 
     # 작업 디렉토리 설정
     if args.work_dir is not None:
@@ -50,18 +45,47 @@ def main():
     # 랜덤 시드 설정
     cfg.seed = args.seed
 
-    # 설정 출력 (디버깅용)
-    print(cfg.pretty_text)
-
-    # 폴드 수와 JSON 경로 설정
+    # K-fold 설정
     num_folds = 5
-    all_fold_metrics = []
+    metrics = []
 
-    # Runner 생성 및 학습 시작
-    runner = Runner.from_cfg(cfg)
-    runner.log_wandb = True 
-    
-    runner.train()
+    # default num_folds = 5
+    for fold in range(num_folds):
+        print(f"Training on fold {fold + 1}/{num_folds}")
+
+        # JSON 파일 경로 설정
+        train_json = f'fold_{fold}_train.json'
+        val_json = f'fold_{fold}_val.json'
+        data_root = '../kfold/'
+
+        cfg.data_root = data_root
+
+        # 데이터 로더 설정
+        cfg.train_dataloader.dataset.ann_file = train_json
+        cfg.train_dataloader.dataset.data_root = data_root
+
+        cfg.val_dataloader.dataset.ann_file = val_json
+        cfg.val_dataloader.dataset.data_root = data_root
+
+        cfg.val_evaluator.ann_file = data_root + val_json
+
+        # Runner 생성 및 학습 시작
+        runner = Runner.from_cfg(cfg)
+        runner.train()
+
+        # K-fold 평가
+        evaluator = Evaluator.from_cfg(cfg.val_evaluater)
+        results = evaluator.evaluate(runner)
+
+        # 평가 결과 저장
+        metrics.append(results)
+
+        # 각 폴드의 성능 출력
+        print(f"Results for fold {fold + 1}: {results}")
+
+    # 전체 평균 성능 계산
+    avg_metrics = {key: sum(metric[key] for metric in metrics) / num_folds for key in metrics[0]}
+    print(f"Average results across folds: {avg_metrics}")
 
 if __name__ == '__main__':
     main()
