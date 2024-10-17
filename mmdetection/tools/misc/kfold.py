@@ -50,7 +50,7 @@ def main():
 
         # Training and validation data storage
         train_data = {'info':data['info'], 'licenses':data['licenses'], 'images': [], 'categories':data['categories'], 'annotations': []}
-        val_data = {'info':data['info'], 'licenses':data['licenses'], 'images': [], 'categoires':data['categories'], 'annotations': []}
+        val_data = {'info':data['info'], 'licenses':data['licenses'], 'images': [], 'categories':data['categories'], 'annotations': []}
 
         for train_idx in train_indices:
             ann = data['annotations'][train_idx]
