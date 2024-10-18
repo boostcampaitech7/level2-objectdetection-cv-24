@@ -73,7 +73,7 @@ def main():
     cfg.seed = args.seed
 
     # 설정 출력 (디버깅용)
-    #print(cfg.pretty_text)
+    print(cfg.pretty_text)
 
     # 폴드 수와 JSON 경로 설정
     num_folds = 5

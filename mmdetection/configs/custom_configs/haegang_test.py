@@ -1,5 +1,5 @@
 _base_ = [
-    '../../configs/retinanet/retinanet_r101_fpn_2x_coco.py'
+    '../../configs/cascade_rcnn/cascade-rcnn_x101_64x4d_fpn_20e_coco.py'
 ]
 import sys
 import os
@@ -21,12 +21,36 @@ classes = ('General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
 # 데이터 파이프라인 설정
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True, with_label=True),
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PhotoMetricDistortion'),
+    dict(
+        type='Albu',
+        transforms=[
+            dict(
+            type='Sharpen',
+            alpha=(0.2, 0.5),
+            lightness=(0.5, 1.5), 
+            p=0.5 
+        )
+        ],
+        bbox_params=dict(
+            type='BboxParams',
+            format='pascal_voc',
+            label_fields=['gt_bboxes_labels', 'gt_ignore_flags'],
+            min_visibility=0.0,
+            filter_lost_elements=True),
+        keymap={
+            'img': 'image',
+            'gt_masks': 'masks',
+            'gt_bboxes': 'bboxes'
+        },
+        skip_img_without_anno=True
+    ),
     dict(type='PackDetInputs')
 ]
+
 
 
 
@@ -61,7 +85,7 @@ train_dataloader = dict(
 )
 
 val_dataloader = dict(
-    batch_size=4,
+    batch_size=2,
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=False),
@@ -95,9 +119,9 @@ test_dataloader = dict(
 optim_wrapper = dict(
     _delete_=True,
     type='OptimWrapper',
-    optimizer=dict(type='AdamW', lr=1e-5, weight_decay=0.0001),
+    optimizer=dict(type='AdamW', lr=2e-4, weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
-    paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)})
+    #paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)})
 )
 
 val_evaluator = dict(
@@ -107,6 +131,7 @@ val_evaluator = dict(
     format_only=False,
     classwise=True
 )
+
 
 test_evaluator = dict(
     type='CocoMetric',
@@ -130,24 +155,34 @@ param_scheduler = [
     dict(
         type='ReduceOnPlateauParamScheduler',
         param_name='lr',  
-        monitor='coco/bbox_mAP',   
+        monitor='coco/bbox_mAP_50',   
         rule='greater',      
-        factor=0.1,       
-        patience=5,      
-        min_value=1e-5,   
+        factor=0.5,       
+        patience=3,      
+        min_value=1e-6,   
         by_epoch=True     
     )
 ]
 
-work_dir = './work_dirs/codetr_swin_transformer'
-
 default_hooks = dict(
-    checkpoint=dict(type='CheckpointHook', interval=1, max_keep_ckpts=3),
+    checkpoint=dict(
+        type='CheckpointHook',
+        interval=1,  
+        max_keep_ckpts=3,  
+        save_best='bbox_mAP_50', 
+        rule='greater'
+    ),
     logger=dict(type='LoggerHook', interval=50)
 )
 
-custom_hooks=[
-        dict(type='WandbLoggerHook', init_kwargs=dict(project='wj3714-naver-ai-boostcamp-org'))
-    ]
+custom_hooks = [
+    dict(
+        type='EarlyStoppingHook',
+        monitor='bbox_mAP',  #판단 척도, bbox_mAP_50이 리더보드 점수 / 일반적인 성능이 bbox_mAP라 알아서 골라야함
+        min_delta=0.001,      # 최소 향상 정도 : 이정도는 올라가야 성능 좋아진거라 봄
+        patience=7,           #n에폭 연속 못올라가면 사망(위 param scheduler patience보다는 커야지 안그러면 lr조정도 안하고 early stop)
+        rule='greater'        
+    )
+]
 
 log_processor = dict(by_epoch=True)
