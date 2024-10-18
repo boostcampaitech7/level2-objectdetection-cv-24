@@ -1,16 +1,11 @@
 _base_ = [
     '../../configs/retinanet/retinanet_r101_fpn_2x_coco.py'
 ]
-import sys
-import os
-
-# custom_hooks.py가 위치한 디렉토리 경로를 추가
-sys.path.append(os.path.abspath('/data/ephemeral/home/level2-objectdetection-cv-24/mmdetection'))
 
 # Custom imports 설정
 custom_imports = dict(
-    imports=['custom_hooks'],  # custom_hooks.py 파일을 임포트
-    allow_failed_imports=True
+    imports=['/data/ephemeral/home/level2-objectdetection-cv-24/mmdetection/custom_hooks'],  # custom_hooks.py 파일을 임포트
+    allow_failed_imports=False
 )
 
 dataset_type = 'CocoDataset'
@@ -24,7 +19,7 @@ train_pipeline = [
     dict(type='LoadAnnotations', with_bbox=True, with_label=True),
     dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
-    dict(type='PhotoMetricDistortion'),
+    dict(type='Rotate', level=1, prob=0.5),
     dict(type='PackDetInputs')
 ]
 
@@ -52,7 +47,7 @@ train_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='temp_train.json',
+        ann_file='label_train.json',
         data_prefix=dict(img=''),
         filter_cfg=dict(filter_empty_gt=True, min_size=32),
         pipeline=train_pipeline,
@@ -68,7 +63,7 @@ val_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='temp_val.json',
+        ann_file='label_val.json',
         data_prefix=dict(img=''),
         test_mode=True,
         pipeline=val_pipeline,
@@ -102,7 +97,7 @@ optim_wrapper = dict(
 
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=data_root + 'temp_val.json',
+    ann_file=data_root + 'label_val.json',
     metric='bbox',
     format_only=False,
     classwise=True
