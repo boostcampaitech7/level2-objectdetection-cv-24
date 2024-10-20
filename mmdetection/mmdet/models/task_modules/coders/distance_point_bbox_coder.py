@@ -44,7 +44,11 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
             Tensor: Box transformation deltas. The shape is (N, 4).
         """
         gt_bboxes = get_box_tensor(gt_bboxes)
-        assert points.size(0) == gt_bboxes.size(0)
+        if points.dim() == 2 and gt_bboxes.dim() == 3:
+            points = points.unsqueeze(0).expand(gt_bboxes.size(0), -1, -1)
+        elif points.dim() == 3 and gt_bboxes.dim() == 2:
+            gt_bboxes = gt_bboxes.unsqueeze(0).expand(points.size(0), -1, -1)
+        assert points.shape[:-1] == gt_bboxes.shape[:-1]
         assert points.size(-1) == 2
         assert gt_bboxes.size(-1) == 4
         return bbox2distance(points, gt_bboxes, max_dis, eps)
@@ -73,6 +77,9 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
             Union[Tensor, :obj:`BaseBoxes`]: Boxes with shape (N, 4) or
             (B, N, 4)
         """
+        # 차원 확장
+        if points.dim() == 2 and pred_bboxes.dim() == 3:
+            points = points.unsqueeze(0).expand(pred_bboxes.size(0), -1, -1)
         assert points.size(0) == pred_bboxes.size(0)
         assert points.size(-1) == 2
         assert pred_bboxes.size(-1) == 4
