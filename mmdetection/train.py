@@ -24,7 +24,7 @@ sweep_configuration = {
 }
 
 # sweep id 자동으로 받아오기
-sweep_id = wandb.sweep(sweep=sweep_configuration, project='fixed_label_test')
+#sweep_id = wandb.sweep(sweep=sweep_configuration, project='fixed_label_test')
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detection model')
@@ -39,11 +39,11 @@ def parse_args():
 def main():
     args = parse_args()
 
-    wandb.init()
+    #wandb.init()
     
-    lr  =  wandb.config.lr
-    bs = wandb.config.batch_size
-    epochs = wandb.config.epochs
+    #lr  =  wandb.config.lr
+    #bs = wandb.config.batch_size
+    #epochs = wandb.config.epochs
     
     # 모든 mmdetection 모듈을 등록
     register_all_modules()
@@ -85,12 +85,13 @@ def main():
     
     runner.train()
     # Config 값 기록
-    wandb.config.update({
-        'learning_rate': wandb.config.get(lr),
-        'batch_size': wandb.config.get(bs),
-        'max_epochs': wandb.config.get(epochs)
-    })    
+    #wandb.config.update({
+    #    'learning_rate': wandb.config.get(lr),
+    #    'batch_size': wandb.config.get(bs),
+    #    'max_epochs': wandb.config.get(epochs)
+    #})    
     
 if __name__ == '__main__':
     # sweep 실행
-    wandb.agent(sweep_id, function=main, count=2)
+    #wandb.agent(sweep_id, function=main, count=2)
+    main()
