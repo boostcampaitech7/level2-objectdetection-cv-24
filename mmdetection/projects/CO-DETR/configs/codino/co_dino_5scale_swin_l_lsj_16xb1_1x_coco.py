@@ -2,7 +2,7 @@ _base_ = ['co_dino_5scale_r50_lsj_8xb2_1x_coco.py']
 
 image_size = (1280, 1280)
 batch_augments = [
-    dict(type='BatchFixedSizePad', size=image_size, pad_mask=True)
+    dict(type='BatchFixedSizePad', size=image_size)
 ]
 pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'  # noqa
 
@@ -35,7 +35,7 @@ model = dict(
 
 load_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='RandomResize',
         scale=image_size,
@@ -61,7 +61,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=image_size, keep_ratio=True),
     dict(type='Pad', size=image_size, pad_val=dict(img=(114, 114, 114))),
-    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',

@@ -1,21 +1,24 @@
-#_base_ = 'mmdet::common/ssj_scp_270k_coco-instance.py'
-_base_ = [
-    '../../../../configs/_base_/datasets/coco_detection.py',
-    '../../../../configs/_base_/default_runtime.py'
-]
+_base_ = 'mmdet::common/ssj_scp_270k_coco-instance.py'
 
 custom_imports = dict(
-    imports=['projects.CO-DETR.codetr'], allow_failed_imports=True)
+    imports=['projects.CO-DETR.codetr'], allow_failed_imports=False)
 
-# model settings
+# 클래스 정보 설정
+classes = (
+    'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
+    'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing'
+)
+
+# 모델 설정
 num_dec_layer = 6
 loss_lambda = 2.0
-num_classes = 10
+num_classes = len(classes)  # 클래스 수에 맞게 자동으로 계산
 
 image_size = (1024, 1024)
 batch_augments = [
-    dict(type='BatchFixedSizePad', size=image_size, pad_mask=True)
+    dict(type='BatchFixedSizePad', size=image_size)
 ]
+
 model = dict(
     type='CoDETR',
     # If using the lsj augmentation,
@@ -36,7 +39,7 @@ model = dict(
         type='ResNet',
         depth=50,
         num_stages=4,
-        out_indices=(0, 1, 2, 3),   
+        out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
@@ -279,83 +282,76 @@ model = dict(
         # e.g., nms=dict(type='soft_nms', iou_threshold=0.5, min_score=0.05)
     ])
 
-dataset_type = 'CocoDataset'
-data_root = '../dataset/'
-classes = ('General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
-           'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing')
-
-# 데이터 파이프라인 설정
-train_pipeline = [
+# LSJ + CopyPaste
+load_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
+    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+    dict(
+        type='RandomResize',
+        scale=image_size,
+        ratio_range=(0.1, 2.0),
+        keep_ratio=True),
+    dict(
+        type='RandomCrop',
+        crop_type='absolute_range',
+        crop_size=image_size,
+        recompute_bbox=True,
+        allow_negative_crop=True),
+    dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(type='RandomFlip', prob=0.5),
-    dict(type='PhotoMetricDistortion'),
-    dict(type='PackDetInputs')
+    dict(type='Pad', size=image_size, pad_val=dict(img=(114, 114, 114))),
 ]
 
-val_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='PackDetInputs')
-]
-
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
-    dict(type='PackDetInputs')
-]
-
-# 데이터 로더 설정
+# 데이터 로더 설정에 metainfo 추가
 train_dataloader = dict(
-    batch_size=2,
-    num_workers=2,
-    persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='train.json',
-        data_prefix=dict(img=''),
-        filter_cfg=dict(filter_empty_gt=True, min_size=32),
-        pipeline=train_pipeline,
-        metainfo=dict(classes=classes)
+        type='MultiImageMixDataset',
+        dataset=dict(  # 내부에 사용할 기본 데이터셋 정의
+            type='CocoDataset',
+            data_root='../dataset/',
+            ann_file='temp_train.json',
+            data_prefix=dict(img=''),
+            pipeline=[
+                dict(type='LoadImageFromFile'),  # 이미지 로드
+                dict(type='LoadAnnotations', with_bbox=True),  # 어노테이션 로드
+            ],
+            metainfo=dict(classes=[
+                'General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
+                'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing'
+            ])
+        ),
+        pipeline=[
+            dict(type='RandomResize', scale=(1024, 1024), ratio_range=(0.8, 1.25), keep_ratio=True),
+            dict(type='RandomCrop', crop_size=(1024, 1024), allow_negative_crop=True),
+            dict(type='RandomFlip', prob=0.5),
+            dict(type='Pad', size=(1024, 1024), pad_val=dict(img=(114, 114, 114))),
+            dict(type='PackDetInputs')  # 최종 입력 데이터 포맷팅
+        ]
     )
 )
+
 
 val_dataloader = dict(
-    batch_size=4,
-    num_workers=2,
-    persistent_workers=True,
-    sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='test.json',
+        type='CocoDataset',
+        data_root='../dataset/',
+        ann_file='temp_val.json',
         data_prefix=dict(img=''),
-        test_mode=True,
-        pipeline=val_pipeline,
-        metainfo=dict(classes=classes)
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(type='Resize', scale=image_size, keep_ratio=True),
+            dict(type='Pad', size=image_size, pad_val=dict(img=(114, 114, 114))),
+            dict(type='LoadAnnotations', with_bbox=True),
+            dict(type='PackDetInputs', meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape', 'scale_factor'))
+        ],
+        metainfo=dict(classes=classes)  # 클래스 정보 명시
     )
 )
 
-test_dataloader = dict(
-    batch_size=2,
-    num_workers=2,
-    persistent_workers=True,
-    sampler=dict(type='DefaultSampler', shuffle=False),
-    dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='test.json',
-        data_prefix=dict(img=''),
-        test_mode=True,
-        pipeline=test_pipeline,
-        metainfo=dict(classes=classes)
-    )
-)
+test_dataloader = val_dataloader
 
+# Optimizer 및 스케줄러 설정
 optim_wrapper = dict(
     _delete_=True,
     type='OptimWrapper',
@@ -364,58 +360,46 @@ optim_wrapper = dict(
     paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)})
 )
 
+
+
 val_evaluator = dict(
-    type='CocoMetric',
-    ann_file=data_root + 'test.json',
     metric='bbox',
-    format_only=False,
-    classwise=True
+    ann_file='../dataset/temp_val.json' 
 )
 
-test_evaluator = dict(
-    type='CocoMetric',
-    ann_file=data_root + 'test.json',
-    metric='bbox',
-    format_only=False,
-    classwise=True
-)
-
+test_evaluator = dict(val_evaluator)  
+test_evaluator['ann_file'] = '../dataset/test.json'  
+# 학습 설정
 train_cfg = dict(
     _delete_=True,
     type='EpochBasedTrainLoop',
-    max_epochs=40,
+    max_epochs=36,
     val_interval=1
 )
 
-val_cfg = dict(type='ValLoop')
-test_cfg = dict(type='TestLoop')
-
-param_scheduler = [
-    dict(
-        type='MultiStepLR',
-        begin=0,
-        end=40,
-        by_epoch=True,
-        milestones=[11, 30],
-        gamma=0.1
-    )
-]
-
-work_dir = './work_dirs/codetr_swin_transformer'
-
 default_hooks = dict(
-    checkpoint=dict(type='CheckpointHook', interval=1, max_keep_ckpts=3),
+    checkpoint=dict(
+        type='CheckpointHook',
+        interval=1,  
+        max_keep_ckpts=3,  
+        save_best='coco/bbox_mAP_50', 
+        rule='greater',
+        by_epoch = True
+    ),
     logger=dict(type='LoggerHook', interval=50)
 )
 
+custom_hooks = [
+    dict(
+        type='EarlyStoppingHook',
+        monitor='coco/bbox_mAP',  #판단 척도, bbox_mAP_50이 리더보드 점수 / 일반적인 성능이 bbox_mAP라 알아서 골라야함
+        min_delta=0.001,      # 최소 향상 정도 : 이정도는 올라가야 성능 좋아진거라 봄
+        patience=7,           #n에폭 연속 못올라가면 사망(위 param scheduler patience보다는 커야지 안그러면 lr조정도 안하고 early stop)
+        rule='greater'        
+    )
+
+]
 log_processor = dict(by_epoch=True)
 
+auto_scale_lr = dict(base_batch_size=16)
 
-default_hooks = dict(
-    checkpoint=dict(by_epoch=True, interval=1, max_keep_ckpts=3))
-log_processor = dict(by_epoch=True)
-
-# NOTE: `auto_scale_lr` is for automatically scaling LR,
-# USER SHOULD NOT CHANGE ITS VALUES.
-# base_batch_size = (8 GPUs) x (2 samples per GPU)
-# auto_scale_lr = dict(base_batch_size=16)

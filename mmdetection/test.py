@@ -10,10 +10,10 @@ classes = ("General trash", "Paper", "Paper pack", "Metal", "Glass",
            "Plastic", "Styrofoam", "Plastic bag", "Battery", "Clothing")
 
 # config file 들고오기
-cfg = Config.fromfile('/data/ephemeral/home/co_test/mmdetection/configs/cascade_rcnn/cascade-rcnn_x101-64x4d_fpn_1x_coco.py')
+cfg = Config.fromfile('./mmdetection/projects/CO-DETR/configs/codino/co_dino_5scale_swin_l_lsj_16xb1_1x_coco.py')
 
-cfg.work_dir = '/data/ephemeral/home/co_test/mmdetection/work_dirs'
-checkpoint_path = os.path.join(cfg.work_dir, 'cascade-rcnn_x101-64x4d_fpn_1x_coco.pth')
+cfg.work_dir = './mmdetection/work_dirs/codino_swin_real'
+checkpoint_path = os.path.join(cfg.work_dir, 'best_coco_bbox_mAP_50_epoch_12.pth')
 
 model = init_detector(cfg, checkpoint_path, device='cuda:0')
 

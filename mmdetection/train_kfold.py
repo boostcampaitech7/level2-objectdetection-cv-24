@@ -56,7 +56,7 @@ def main():
         # JSON 파일 경로 설정
         train_json = f'fold_{fold}_train.json'
         val_json = f'fold_{fold}_val.json'
-        data_root = '../kfold/'
+        data_root = './kfold/'
 
         cfg.data_root = data_root
 

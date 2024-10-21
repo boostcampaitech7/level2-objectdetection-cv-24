@@ -3,9 +3,9 @@ model = dict(
     backbone=dict(
         _delete_=True,
         type='SwinTransformer',
-        embed_dims=192,  # Swin Large는 192차원 임베딩으로 시작
-        depths=[2, 2, 18, 2],  # 각 스테이지의 깊이
-        num_heads=[6, 12, 24, 48],  # 각 스테이지의 헤드 수
+        embed_dims=192, 
+        depths=[2, 2, 18, 2], 
+        num_heads=[6, 12, 24, 48],  
         window_size=7,
         mlp_ratio=4,
         qkv_bias=True,
@@ -21,7 +21,7 @@ model = dict(
     ),
     neck=dict(
         type='FPN',
-        in_channels=[192, 384, 768, 1536],  # Swin Large에서 각 스테이지의 출력 채널
+        in_channels=[192, 384, 768, 1536],  
         out_channels=256,
         num_outs=5)
 )
