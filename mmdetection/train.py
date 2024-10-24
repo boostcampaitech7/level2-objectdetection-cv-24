@@ -71,7 +71,8 @@ def main():
 
     # 랜덤 시드 설정
     cfg.seed = args.seed
-
+    #cfg.load_from = 'https://download.openmmlab.com/mmdetection/v3.0/codetr/co_dino_5scale_lsj_swin_large_1x_coco-3af73af2.pth'
+    #cfg.custom_hooks = [dict(type='CustomLoadCheckpointHook')]
     # 설정 출력 (디버깅용)
     print(cfg.pretty_text)
 
