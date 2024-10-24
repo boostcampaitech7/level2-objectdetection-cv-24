@@ -31,7 +31,8 @@ model = dict(
         convert_weights=True,
         init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     neck=dict(in_channels=[192, 384, 768, 1536]),
-    query_head=dict(transformer=dict(encoder=dict(with_cp=6))))
+    query_head=dict(transformer=dict(encoder=dict(with_cp=6))),
+    init_cfg = dict(type='Pretrained', checkpoint='https://download.openmmlab.com/mmdetection/v3.0/codetr/co_dino_5scale_lsj_swin_large_1x_coco-3af73af2.pth'))
 
 load_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -55,7 +56,7 @@ load_pipeline = [
 train_dataloader = dict(
     batch_size=1,
     num_workers=1,
-    dataset=dict(dataset=dict(pipeline=load_pipeline)))
+)
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -67,6 +68,3 @@ test_pipeline = [
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
                    'scale_factor'))
 ]
-
-val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
-test_dataloader = val_dataloader

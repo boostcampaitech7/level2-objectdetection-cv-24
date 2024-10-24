@@ -7,24 +7,6 @@ from mmdet.registry import MODELS
 from mmengine.registry import MODELS as ENGINE_MODELS
 from mmdet.models import DetDataPreprocessor
 import wandb
-import numpy as np
-import random
-
-# sweep config 설정
-sweep_configuration = {
-    'method': 'random',
-    'name': 'sweep',
-    'metric': {'goal': 'maximize', 'name': 'coco/bbox_mAP'},
-    'parameters': 
-    {
-        'batch_size': {'values': [4, 8, 16]},
-        'epochs': {'values': [50, 70, 100]},
-        'lr': {'max': 0.01, 'min': 0.0005}
-     }
-}
-
-# sweep id 자동으로 받아오기
-sweep_id = wandb.sweep(sweep=sweep_configuration, project='fixed_label_test')
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detection model')
@@ -39,11 +21,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    wandb.init()
-    
-    lr  =  wandb.config.lr
-    bs = wandb.config.batch_size
-    epochs = wandb.config.epochs
+    wandb.init(project="wj3714-naver-ai-boostcamp-org", job_type="baseline")
     
     # 모든 mmdetection 모듈을 등록
     register_all_modules()
@@ -71,7 +49,8 @@ def main():
 
     # 랜덤 시드 설정
     cfg.seed = args.seed
-
+    #cfg.load_from = 'https://download.openmmlab.com/mmdetection/v3.0/codetr/co_dino_5scale_lsj_swin_large_1x_coco-3af73af2.pth'
+    #cfg.custom_hooks = [dict(type='CustomLoadCheckpointHook')]
     # 설정 출력 (디버깅용)
     print(cfg.pretty_text)
 
@@ -84,13 +63,6 @@ def main():
     runner.log_wandb = True 
     
     runner.train()
-    # Config 값 기록
-    wandb.config.update({
-        'learning_rate': wandb.config.get(lr),
-        'batch_size': wandb.config.get(bs),
-        'max_epochs': wandb.config.get(epochs)
-    })    
-    
+
 if __name__ == '__main__':
-    # sweep 실행
-    wandb.agent(sweep_id, function=main, count=2)
+    main()

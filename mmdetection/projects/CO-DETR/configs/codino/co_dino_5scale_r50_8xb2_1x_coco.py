@@ -1,7 +1,7 @@
 _base_ = './co_dino_5scale_r50_lsj_8xb2_1x_coco.py'
 
 model = dict(
-    use_lsj=False, data_preprocessor=dict(pad_mask=False, batch_augments=None))
+    use_lsj=False, data_preprocessor=dict(batch_augments=None))
 
 # train_pipeline, NOTE the img_scale and the Pad's size_divisor is different
 # from the default setting in mmdet.

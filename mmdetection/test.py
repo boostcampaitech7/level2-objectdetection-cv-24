@@ -12,8 +12,8 @@ classes = ("General trash", "Paper", "Paper pack", "Metal", "Glass",
 # config file 들고오기
 cfg = Config.fromfile('/data/ephemeral/home/co_test/mmdetection/configs/cascade_rcnn/cascade-rcnn_x101-64x4d_fpn_1x_coco.py')
 
-cfg.work_dir = '/data/ephemeral/home/co_test/mmdetection/work_dirs'
-checkpoint_path = os.path.join(cfg.work_dir, 'cascade-rcnn_x101-64x4d_fpn_1x_coco.pth')
+cfg.work_dir = './mmdetection/work_dirs/codino_swin_real'
+checkpoint_path = os.path.join(cfg.work_dir, 'best_coco_bbox_mAP_50_epoch_12.pth')
 
 model = init_detector(cfg, checkpoint_path, device='cuda:0')
 
@@ -47,7 +47,7 @@ def process_annotations(annotation_file, output_file):
                 bbox = pred_instances['bboxes'][i]
                 
                 # 임계값 이상의 결과만 포함
-                if score < 0.05:
+                if score < 0.3:
                     continue
                 
                 # 예측 결과 포맷: "class score xmin ymin xmax ymax"
@@ -66,10 +66,10 @@ def process_annotations(annotation_file, output_file):
 
 # test.json 처리, test.json파일 경로
 test_annotation_file = '/data/ephemeral/home/dataset/test.json'
-test_output_file = 'submission_test.csv'
+test_output_file = 'thresholdsubmission_test.csv'
 process_annotations(test_annotation_file, test_output_file)
 
 # correlation.json 처리, correlation.json파일 경로
-correlation_annotation_file = '/data/ephemeral/home/dataset/correlation.json'
-correlation_output_file = 'submission_correlation.csv'
-process_annotations(correlation_annotation_file, correlation_output_file)
+#correlation_annotation_file = '/data/ephemeral/home/dataset/correlation.json'
+#correlation_output_file = 'submission_correlation.csv'
+#process_annotations(correlation_annotation_file, correlation_output_file)

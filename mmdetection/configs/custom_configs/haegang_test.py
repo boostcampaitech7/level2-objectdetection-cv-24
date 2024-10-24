@@ -1,5 +1,5 @@
 _base_ = [
-    '../../configs/cascade_rcnn/cascade-rcnn_x101_64x4d_fpn_20e_coco.py'
+    '../../configs/cascade_rcnn/cascade_rcnn_swinL.py'
 ]
 import sys
 import os
@@ -14,7 +14,7 @@ custom_imports = dict(
 )
 
 dataset_type = 'CocoDataset'
-data_root = './dataset/'
+data_root = '../dataset/'
 classes = ('General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
            'Plastic', 'Styrofoam', 'Plastic bag', 'Battery', 'Clothing')
 
@@ -24,6 +24,7 @@ train_pipeline = [
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
+    # dict(type='Rotate', level=1, prob=0.5),
     dict(type='PhotoMetricDistortion'),
     dict(
         type='Albu',
@@ -69,14 +70,14 @@ test_pipeline = [
 
 # 데이터 로더 설정
 train_dataloader = dict(
-    batch_size=8,
+    batch_size=2,
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='temp_train.json',
+        ann_file='updated_train.json',
         data_prefix=dict(img=''),
         filter_cfg=dict(filter_empty_gt=True, min_size=32),
         pipeline=train_pipeline,
@@ -169,7 +170,7 @@ default_hooks = dict(
         type='CheckpointHook',
         interval=1,  
         max_keep_ckpts=3,  
-        save_best='bbox_mAP_50', 
+        save_best='coco/bbox_mAP_50', 
         rule='greater'
     ),
     logger=dict(type='LoggerHook', interval=50)
