@@ -1,4 +1,3 @@
-#_base_ = 'mmdet::common/ssj_scp_270k_coco-instance.py'
 _base_ = [
     '../../../../configs/_base_/datasets/coco_detection.py',
     '../../../../configs/_base_/default_runtime.py'
@@ -12,15 +11,14 @@ num_dec_layer = 6
 loss_lambda = 2.0
 num_classes = 10
 
-pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'
-
 image_size = (1024, 1024)
 batch_augments = [
     dict(type='BatchFixedSizePad', size=image_size, pad_mask=False)
 ]
+
 model = dict(
     type='CoDETR',
-    use_lsj=True,
+    use_lsj=True,  # LSJ 사용 설정
     eval_module='detr',
     data_preprocessor=dict(
         type='DetDataPreprocessor',
@@ -45,8 +43,7 @@ model = dict(
         patch_norm=True,
         out_indices=(0, 1, 2, 3),
         with_cp=True,
-        convert_weights=True,
-        init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
+        convert_weights=True),
     neck=dict(
         type='ChannelMapper',
         in_channels=[192, 384, 768, 1536],
@@ -199,7 +196,6 @@ model = dict(
                 use_sigmoid=True,
                 loss_weight=1.0 * num_dec_layer * loss_lambda)),
     ],
-    # model training and testing settings
     train_cfg=[
         dict(
             assigner=dict(
@@ -255,10 +251,8 @@ model = dict(
             debug=False)
     ],
     test_cfg=[
-        # Deferent from the DINO, we use the NMS.
         dict(
             max_per_img=300,
-            # NMS can improve the mAP by 0.2.
             nms=dict(type='soft_nms', iou_threshold=0.8)),
         dict(
             rpn=dict(
@@ -271,15 +265,14 @@ model = dict(
                 nms=dict(type='nms', iou_threshold=0.5),
                 max_per_img=100)),
         dict(
-            # atss bbox head:
             nms_pre=1000,
             min_bbox_size=0,
             score_thr=0.0,
             nms=dict(type='nms', iou_threshold=0.6),
-            max_per_img=100),
-        # soft-nms is also supported for rcnn testing
-        # e.g., nms=dict(type='soft_nms', iou_threshold=0.5, min_score=0.05)
-    ])
+            max_per_img=100)
+    ],
+    init_cfg=dict(type='Pretrained', checkpoint='https://download.openmmlab.com/mmdetection/v3.0/codetr/co_dino_5scale_lsj_swin_large_1x_coco-3af73af2.pth')
+    )
 
 dataset_type = 'CocoDataset'
 data_root = './dataset/'
@@ -292,13 +285,18 @@ train_pipeline = [
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='RandomResize',
-        scale=(1024, 1024),
-        ratio_range=(0.8, 1.2),
-        keep_ratio=True
-    ),
-    dict(type='RandomCrop', crop_size=(1024, 1024)),
+        scale=image_size,
+        ratio_range=(0.1, 2.0),  # LSJ 스케일 범위
+        keep_ratio=True),
+    dict(
+        type='RandomCrop',
+        crop_type='absolute_range',
+        crop_size=image_size,
+        recompute_bbox=True,
+        allow_negative_crop=True),
+    dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(type='RandomFlip', prob=0.5),
-    dict(type='PhotoMetricDistortion'),
+    dict(type='Pad', size=image_size),
     dict(type='PackDetInputs')
 ]
 
@@ -311,8 +309,18 @@ val_pipeline = [
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
-    dict(type='PackDetInputs')
+    dict(
+        type='TestTimeAug',
+        transforms=[
+            [
+                dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
+            ],
+            [
+                dict(type='RandomFlip', prob=0.0),  # prob=0.5가 아닌 0.0으로 설정
+                dict(type='RandomFlip', prob=1.0),  # flip을 확실히 적용
+            ],
+            [dict(type='PackDetInputs')]
+        ])
 ]
 
 # 데이터 로더 설정
@@ -321,6 +329,7 @@ train_dataloader = dict(
     num_workers=4,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
+    batch_sampler=dict(type='AspectRatioBatchSampler'),  # LSJ를 위한 배치 샘플러
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
@@ -349,7 +358,7 @@ val_dataloader = dict(
 )
 
 test_dataloader = dict(
-    batch_size=2,
+    batch_size=1,
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=False),
@@ -363,19 +372,6 @@ test_dataloader = dict(
         metainfo=dict(classes=classes)
     )
 )
-
-optim_wrapper = dict(
-    type='OptimWrapper',
-    optimizer=dict(type='AdamW', lr=2e-4, weight_decay=0.0005),
-    clip_grad=dict(max_norm=0.1, norm_type=2),
-    accumulative_counts=2
-)
-
-max_epochs = 12
-train_cfg = dict(
-    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
-val_cfg = dict(type='ValLoop')
-test_cfg = dict(type='TestLoop')
 
 val_evaluator = dict(
     type='CocoMetric',
@@ -393,26 +389,37 @@ test_evaluator = dict(
     classwise=True
 )
 
+optim_wrapper = dict(
+    type='OptimWrapper',
+    optimizer=dict(type='AdamW', lr=1e-4, weight_decay=0.0001),
+    clip_grad=dict(max_norm=0.1, norm_type=2),
+    accumulative_counts=2
+)
+
+max_epochs = 12
+train_cfg = dict(
+    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
+val_cfg = dict(type='ValLoop')
+test_cfg = dict(type='TestLoop')
+
 param_scheduler = [
     dict(
-        type='LinearLR', 
-        start_factor=0.001, 
-        by_epoch=False, 
-        begin=0, 
-        end=500
-    ),
-    dict(
-        type='CosineAnnealingLR',
-        T_max=11.5,  # 11 에폭 동안 코사인 감소 (총 12 에폭에서 warm-up 1 에폭 제외)
-        eta_min=1e-6,  # 최소 학습률
-        begin=0.5,  # warm-up 이후 시작
-        end=12,
-        by_epoch=True
-    )
+        type='MultiStepLR',
+        begin=0,
+        end=max_epochs,
+        by_epoch=True,
+        milestones=[8],
+        gamma=0.1)
 ]
 
 default_hooks = dict(
-    checkpoint=dict(type='CheckpointHook', interval=1, max_keep_ckpts=3),
+    checkpoint=dict(
+        type='CheckpointHook',
+        interval=1,
+        max_keep_ckpts=3,
+        save_best='auto', 
+        rule='greater'
+    ),
     logger=dict(type='LoggerHook', interval=50)
 )
 
@@ -420,6 +427,7 @@ log_processor = dict(by_epoch=True)
 
 env_cfg = dict(cudnn_benchmark=True)
 fp16 = dict(loss_scale=512.)
+
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.

@@ -44,12 +44,7 @@ model = dict(
         deepen_factor=deepen_factor,
         widen_factor=widen_factor,
         norm_cfg=dict(type='BN', momentum=momentum, eps=0.001),
-        act_cfg=dict(type='SiLU', inplace=True),
-        init_cfg=dict(
-            type='Pretrained',
-            checkpoint='https://download.openmmlab.com/mmyolo/v0/yolov8/yolov8_m_syncbn_fast_8xb16-500e_coco/yolov8_m_syncbn_fast_8xb16-500e_coco_20230115_192200-c22e560a.pth',
-            prefix='backbone.'
-        )),
+        act_cfg=dict(type='SiLU', inplace=True)),
     neck=dict(
         type='mmyolo.YOLOv8PAFPN',
         deepen_factor=deepen_factor,
@@ -103,7 +98,11 @@ model = dict(
         nms_pre=30000,
         score_thr=0.001,
         nms=dict(type='nms', iou_threshold=0.7),
-        max_per_img=300))
+        max_per_img=300),
+    init_cfg=dict(
+        type='Pretrained',
+        checkpoint='https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window7_224_22k.pth'
+    ))
 
 # ========================Dataset config=========================
 train_pipeline = [

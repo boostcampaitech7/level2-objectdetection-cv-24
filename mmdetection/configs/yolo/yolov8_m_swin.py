@@ -10,7 +10,7 @@ classes = ('General trash', 'Paper', 'Paper pack', 'Metal', 'Glass',
 
 # Batch size
 train_batch_size_per_gpu = 4
-train_num_workers = 2
+train_num_workers = 4
 
 # -----model related-----
 # Scaling factor
@@ -18,36 +18,37 @@ deepen_factor = 1.0
 widen_factor = 1.0
 
 # -----train val related-----
-base_lr = 5e-5
-max_epochs = 150
+base_lr = 1e-4
+max_epochs = 50
 
 loss_cls = 0.05
 loss_bbox = 0.3
-loss_dfl = 0.05
+loss_dfl = 0.025
 
 momentum = 0.03
 eps = 0.001
 
 img_scale = (1024, 1024)
 
+# Swin-B 백본 설정
 swin_backbone = dict(
     type='SwinTransformer',
-    embed_dims=128,
+    embed_dims=128,  # 192에서 128로 변경
     depths=[2, 2, 18, 2],
-    num_heads=[4, 8, 16, 32],
+    num_heads=[4, 8, 16, 32],  # 헤드 수 조정
     window_size=7,
     mlp_ratio=4,
     qkv_bias=True,
     qk_scale=None,
     drop_rate=0.,
     attn_drop_rate=0.,
-    drop_path_rate=0.2,
+    drop_path_rate=0.3,  # 드롭패스 비율 증가
     patch_norm=True,
     out_indices=(0, 1, 2, 3),
     with_cp=False,
     convert_weights=True,
     init_cfg=dict(type='Pretrained', 
-                  checkpoint='https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window7_224_22k.pth'))
+                 checkpoint='https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window7_224_22k.pth'))
 
 model = dict(
     type='mmyolo.YOLODetector',
@@ -60,7 +61,7 @@ model = dict(
     backbone=swin_backbone,
     neck=dict(
         type='mmyolo.YOLOv8PAFPN',
-        in_channels=[128, 256, 512, 1024],
+        in_channels=[128, 256, 512, 1024],  # Swin-B 출력 채널에 맞게 조정
         out_channels=[128, 256, 512, 1024],
         num_csp_blocks=3,
         norm_cfg=dict(type='BN', momentum=momentum, eps=eps),
@@ -70,7 +71,7 @@ model = dict(
         head_module=dict(
             type='mmyolo.YOLOv8HeadModule',
             num_classes=10,
-            in_channels=[128, 256, 512, 1024],
+            in_channels=[128, 256, 512, 1024],  # Swin-B 출력 채널에 맞게 조정
             widen_factor=widen_factor,
             reg_max=16,
             norm_cfg=dict(type='BN', momentum=momentum, eps=eps),
@@ -79,9 +80,16 @@ model = dict(
         prior_generator=dict(
             type='mmdet.MlvlPointGenerator', offset=0.5, strides=[4, 8, 16, 32]),
         bbox_coder=dict(type='mmyolo.DistancePointBBoxCoder'),
+        # loss_cls=dict(
+        #     type='mmdet.CrossEntropyLoss',
+        #     use_sigmoid=True,
+        #     reduction='none',
+        #     loss_weight=loss_cls),
         loss_cls=dict(
-            type='mmdet.CrossEntropyLoss',
+            type='mmdet.FocalLoss',  # CrossEntropyLoss에서 변경
             use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
             reduction='none',
             loss_weight=loss_cls),
         loss_bbox=dict(
@@ -127,14 +135,19 @@ train_pipeline = [
         ]),
     dict(
         type='mmyolo.YOLOv5RandomAffine',
-        max_rotate_degree=10.0,
-        max_shear_degree=2.0,
-        scaling_ratio_range=(0.1, 2.0),
+        max_rotate_degree=15.0,
+        max_shear_degree=3.0,
+        scaling_ratio_range=(0.1, 2.5),
         border=(-img_scale[0] // 2, -img_scale[1] // 2),
         border_val=(114, 114, 114)),
     dict(type='mmyolo.YOLOv5HSVRandomAug'),
     dict(type='mmdet.RandomFlip', prob=0.5),
-    dict(type='PhotoMetricDistortion'),
+    dict(
+        type='PhotoMetricDistortion',
+        brightness_delta=32,
+        contrast_range=(0.5, 1.5),
+        saturation_range=(0.5, 1.5),
+        hue_delta=18),
     dict(
         type='mmdet.PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape', 'flip', 'flip_direction'))
@@ -206,15 +219,14 @@ test_evaluator = dict(
 # ========================Training config=======================
 optim_wrapper = dict(
     type='AmpOptimWrapper',
-    optimizer=dict(type='AdamW', lr=base_lr, weight_decay=0.005),
+    optimizer=dict(type='AdamW', lr=base_lr, weight_decay=0.0001),
     clip_grad=dict(max_norm=0.1, norm_type=2),
-    accumulative_counts=4
 )
 
 train_cfg = dict(
     type='EpochBasedTrainLoop',
     max_epochs=max_epochs,
-    val_interval=5)
+    val_interval=3)
 
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
@@ -230,7 +242,7 @@ param_scheduler = [
     dict(
         type='CosineAnnealingLR',
         T_max=max_epochs - 1,
-        eta_min=base_lr * 0.01,  # 0.05에서 0.01로 감소
+        eta_min=base_lr * 0.05,  # 0.05에서 0.01로 감소
         begin=1,
         end=max_epochs,
         by_epoch=True,
@@ -241,8 +253,8 @@ param_scheduler = [
 default_hooks = dict(
     checkpoint=dict(
         type='CheckpointHook',
-        interval=5,
-        max_keep_ckpts=3,
+        interval=3,
+        max_keep_ckpts=5,
         save_best='auto', 
         rule='greater'
     ),
@@ -253,15 +265,15 @@ custom_hooks = [
     dict(
         type='mmyolo.EMAHook',
         ema_type='ExpMomentumEMA',
-        momentum=0.0002,
+        momentum=0.0001,
         update_buffers=True,
         strict_load=False,
         priority=49),
     dict(
         type='EarlyStoppingHook',
         monitor='coco/bbox_mAP_50',  #판단 척도, bbox_mAP_50이 리더보드 점수 / 일반적인 성능이 bbox_mAP라 알아서 골라야함
-        min_delta=0.001,      # 최소 향상 정도 : 이정도는 올라가야 성능 좋아진거라 봄
-        patience=5,           #n에폭 연속 못올라가면 사망(위 param scheduler patience보다는 커야지 안그러면 lr조정도 안하고 early stop)
+        min_delta=0.005,      # 최소 향상 정도 : 이정도는 올라가야 성능 좋아진거라 봄
+        patience=7,          #n에폭 연속 못올라가면 사망(위 param scheduler patience보다는 커야지 안그러면 lr조정도 안하고 early stop)
         rule='greater'        
     )
 ]
