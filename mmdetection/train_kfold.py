@@ -46,12 +46,11 @@ def main():
     cfg.seed = args.seed
 
     # K-fold 설정
-    num_folds = 5
+    num_folds = 3
     metrics = []
-
     # default num_folds = 5
     for fold in range(num_folds):
-        print(f"Training on fold {fold + 1}/{num_folds}")
+        print(f"✨✨✨Training on fold {fold + 1}/{num_folds}✨✨✨")
 
         # JSON 파일 경로 설정
         train_json = f'fold_{fold}_train.json'
@@ -72,20 +71,6 @@ def main():
         # Runner 생성 및 학습 시작
         runner = Runner.from_cfg(cfg)
         runner.train()
-
-        # K-fold 평가
-        evaluator = Evaluator.from_cfg(cfg.val_evaluater)
-        results = evaluator.evaluate(runner)
-
-        # 평가 결과 저장
-        metrics.append(results)
-
-        # 각 폴드의 성능 출력
-        print(f"Results for fold {fold + 1}: {results}")
-
-    # 전체 평균 성능 계산
-    avg_metrics = {key: sum(metric[key] for metric in metrics) / num_folds for key in metrics[0]}
-    print(f"Average results across folds: {avg_metrics}")
 
 if __name__ == '__main__':
     main()

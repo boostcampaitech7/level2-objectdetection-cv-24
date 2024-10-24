@@ -1,5 +1,5 @@
 _base_ = [
-    '../../configs/ddq/ddq-detr-4scale_swinl_8xb2-30e_coco.py'
+    '../../configs/cascade_rcnn/cascade_rcnn_swinL.py'
 ]
 import sys
 import os
